@@ -98,8 +98,8 @@ typedef long long mstime_t; /* millisecond time type. */
 #define OBJ_LIST_COMPRESS_DEPTH 0
 
 /* List related stuff */
-#define LIST_HEAD 0
-#define LIST_TAIL 1
+#define REDIS_LIST_HEAD 0
+#define REDIS_LIST_TAIL 1
 
 /* Sorted sets data type */
 

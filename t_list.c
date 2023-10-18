@@ -33,7 +33,7 @@ typedef struct {
  * the function takes care of it if needed. */
 void listTypePush(robj *subject, robj *value, int where) {
     if (subject->encoding == OBJ_ENCODING_QUICKLIST) {
-        int pos = (where == LIST_HEAD) ? QUICKLIST_HEAD : QUICKLIST_TAIL;
+        int pos = (where == REDIS_LIST_HEAD) ? QUICKLIST_HEAD : QUICKLIST_TAIL;
         value = getDecodedObject(value);
         size_t len = sdslen(value->ptr);
         quicklistPush(subject->ptr, value->ptr, len, pos);
@@ -51,7 +51,7 @@ robj *listTypePop(robj *subject, int where) {
     long long vlong;
     robj *value = NULL;
 
-    int ql_where = where == LIST_HEAD ? QUICKLIST_HEAD : QUICKLIST_TAIL;
+    int ql_where = where == REDIS_LIST_HEAD ? QUICKLIST_HEAD : QUICKLIST_TAIL;
     if (subject->encoding == OBJ_ENCODING_QUICKLIST) {
         if (quicklistPopCustom(subject->ptr, ql_where, (unsigned char **)&value,
                                NULL, &vlong, listPopSaver)) {
@@ -81,10 +81,10 @@ listTypeIterator *listTypeInitIterator(robj *subject, long index,
     li->encoding = subject->encoding;
     li->direction = direction;
     li->iter = NULL;
-    /* LIST_HEAD means start at TAIL and move *towards* head.
-     * LIST_TAIL means start at HEAD and move *towards tail. */
+    /* REDIS_LIST_HEAD means start at TAIL and move *towards* head.
+     * REDIS_LIST_TAIL means start at HEAD and move *towards tail. */
     int iter_direction =
-        direction == LIST_HEAD ? AL_START_TAIL : AL_START_HEAD;
+        direction == REDIS_LIST_HEAD ? AL_START_TAIL : AL_START_HEAD;
     if (li->encoding == OBJ_ENCODING_QUICKLIST) {
         li->iter = quicklistGetIteratorAtIdx(li->subject->ptr,
                                              iter_direction, index);
@@ -123,10 +123,10 @@ void listTypeInsert(listTypeEntry *entry, robj *value, int where) {
         value = getDecodedObject(value);
         sds str = value->ptr;
         size_t len = sdslen(str);
-        if (where == LIST_TAIL) {
+        if (where == REDIS_LIST_TAIL) {
             quicklistInsertAfter((quicklist *)entry->entry.quicklist,
                                  &entry->entry, str, len);
-        } else if (where == LIST_HEAD) {
+        } else if (where == REDIS_LIST_HEAD) {
             quicklistInsertBefore((quicklist *)entry->entry.quicklist,
                                   &entry->entry, str, len);
         }
@@ -256,7 +256,7 @@ int RsLInsert(redisDbIF *db, robj *key, int where, robj *pivot, robj *val)
 
     /* Seek pivot from head to tail */
     listTypeEntry entry;
-    listTypeIterator *iter = listTypeInitIterator(subject,0,LIST_TAIL);
+    listTypeIterator *iter = listTypeInitIterator(subject,0,REDIS_LIST_TAIL);
     while (listTypeNext(iter,&entry)) {
         if (listTypeEqual(&entry,pivot)) {
             listTypeInsert(&entry,val,where);
@@ -292,7 +292,7 @@ int RsLPop(redisDbIF *db, robj *key, sds *element)
     }
     redisDb *redis_db = (redisDb*)db;
 
-    return popGenericCommand(redis_db, key, element, LIST_HEAD);
+    return popGenericCommand(redis_db, key, element, REDIS_LIST_HEAD);
 }
 
 int RsLPush(redisDbIF *db, robj *key, robj *vals[], unsigned long vals_size)
@@ -302,7 +302,7 @@ int RsLPush(redisDbIF *db, robj *key, robj *vals[], unsigned long vals_size)
     }
     redisDb *redis_db = (redisDb*)db;
 
-    return pushGenericCommand(redis_db, key, vals, vals_size, LIST_HEAD);
+    return pushGenericCommand(redis_db, key, vals, vals_size, REDIS_LIST_HEAD);
 }
 
 int RsLPushx(redisDbIF *db, robj *key, robj *vals[], unsigned long vals_size)
@@ -312,7 +312,7 @@ int RsLPushx(redisDbIF *db, robj *key, robj *vals[], unsigned long vals_size)
     }
     redisDb *redis_db = (redisDb*)db;
 
-    return pushxGenericCommand(redis_db, key, vals, vals_size, LIST_HEAD);
+    return pushxGenericCommand(redis_db, key, vals, vals_size, REDIS_LIST_HEAD);
 }
 
 int RsLRange(redisDbIF *db, robj *key, long start, long end, sds **vals, unsigned long *vals_size)
@@ -349,7 +349,7 @@ int RsLRange(redisDbIF *db, robj *key, long start, long end, sds **vals, unsigne
 
     /* Return the result in form of a multi-bulk reply */
     if (o->encoding == OBJ_ENCODING_QUICKLIST) {
-        listTypeIterator *iter = listTypeInitIterator(o, start, LIST_TAIL);
+        listTypeIterator *iter = listTypeInitIterator(o, start, REDIS_LIST_TAIL);
 
         int i = 0;
         while(rangelen--) {
@@ -386,9 +386,9 @@ int RsLRem(redisDbIF *db, robj *key, long count, robj *val)
     listTypeIterator *li;
     if (count < 0) {
         count = -count;
-        li = listTypeInitIterator(subject,-1,LIST_HEAD);
+        li = listTypeInitIterator(subject,-1,REDIS_LIST_HEAD);
     } else {
-        li = listTypeInitIterator(subject,0,LIST_TAIL);
+        li = listTypeInitIterator(subject,0,REDIS_LIST_TAIL);
     }
 
     long removed = 0;
@@ -488,7 +488,7 @@ int RsRPop(redisDbIF *db, robj *key, sds *element)
     }
     redisDb *redis_db = (redisDb*)db;
 
-    return popGenericCommand(redis_db, key, element, LIST_TAIL);
+    return popGenericCommand(redis_db, key, element, REDIS_LIST_TAIL);
 }
 
 int RsRPush(redisDbIF *db, robj *key, robj *vals[], unsigned long vals_size)
@@ -498,7 +498,7 @@ int RsRPush(redisDbIF *db, robj *key, robj *vals[], unsigned long vals_size)
     }
     redisDb *redis_db = (redisDb*)db;
 
-    return pushGenericCommand(redis_db, key, vals, vals_size, LIST_TAIL);
+    return pushGenericCommand(redis_db, key, vals, vals_size, REDIS_LIST_TAIL);
 }
 
 int RsRPushx(redisDbIF *db, robj *key, robj *vals[], unsigned long vals_size)
@@ -508,5 +508,5 @@ int RsRPushx(redisDbIF *db, robj *key, robj *vals[], unsigned long vals_size)
     }
     redisDb *redis_db = (redisDb*)db;
 
-    return pushxGenericCommand(redis_db, key, vals, vals_size, LIST_TAIL);
+    return pushxGenericCommand(redis_db, key, vals, vals_size, REDIS_LIST_TAIL);
 }
