@@ -344,7 +344,7 @@ int RsLRange(redisDbIF *db, robj *key, long start, long end, sds **vals, unsigne
     long rangelen = (end-start)+1;
     *vals_size = rangelen;
 
-    *vals = (sds *)zcalloc(sizeof(sds) * rangelen);
+    *vals = (sds *)zcallocm(sizeof(sds) * rangelen);
     sds *array = *vals;
 
     /* Return the result in form of a multi-bulk reply */

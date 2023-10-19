@@ -86,7 +86,7 @@ dictType objectKeyPointerValueDictType = {
 
 redisDb* createRedisDb(void)
 {
-    redisDb *db = zcalloc(sizeof(*db));
+    redisDb *db = zcallocm(sizeof(*db));
     if (NULL == db) return NULL;
 
     db->dict = dictCreate(&dbDictType, NULL);
