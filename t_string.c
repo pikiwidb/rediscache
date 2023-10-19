@@ -3,7 +3,7 @@
 #include <limits.h>
 #include <stdio.h>
 
-#include "redisdbIF.h"
+#include "redis.h"
 #include "commondef.h"
 #include "commonfunc.h"
 #include "zmalloc.h"
@@ -250,7 +250,7 @@ static int setrangeCommand(redisDb *redis_db, robj *kobj, long offset, robj *vob
     return C_OK;
 }
 
-int RsSet(redisDbIF* db, robj *key, robj *val, robj *expire)
+int RsSet(redisDbIF db, robj *key, robj *val, robj *expire)
 {
     if (NULL == db || NULL == key || NULL == val) {
         return REDIS_INVALID_ARG;
@@ -260,7 +260,7 @@ int RsSet(redisDbIF* db, robj *key, robj *val, robj *expire)
     return setGenericCommand(redis_db, key, val, expire, UNIT_SECONDS, OBJ_SET_NO_FLAGS);
 }
 
-int RsSetnx(redisDbIF *db, robj *key, robj *val, robj *expire)
+int RsSetnx(redisDbIF db, robj *key, robj *val, robj *expire)
 {
     if (NULL == db || NULL == key || NULL == val) {
         return REDIS_INVALID_ARG;
@@ -270,7 +270,7 @@ int RsSetnx(redisDbIF *db, robj *key, robj *val, robj *expire)
     return setGenericCommand(redis_db, key, val, expire, UNIT_SECONDS, OBJ_SET_NX);;
 }
 
-int RsSetxx(redisDbIF *db, robj *key, robj *val, robj *expire)
+int RsSetxx(redisDbIF db, robj *key, robj *val, robj *expire)
 {
     if (NULL == db || NULL == key || NULL == val) {
         return REDIS_INVALID_ARG;
@@ -280,7 +280,7 @@ int RsSetxx(redisDbIF *db, robj *key, robj *val, robj *expire)
     return setGenericCommand(redis_db, key, val, expire, UNIT_SECONDS, OBJ_SET_XX);;
 }
 
-int RsGet(redisDbIF *db, robj *key, robj **val)
+int RsGet(redisDbIF db, robj *key, robj **val)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -296,7 +296,7 @@ int RsGet(redisDbIF *db, robj *key, robj **val)
     return C_OK;
 }
 
-int RsIncr(redisDbIF *db, robj *key, long long *ret)
+int RsIncr(redisDbIF db, robj *key, long long *ret)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -306,7 +306,7 @@ int RsIncr(redisDbIF *db, robj *key, long long *ret)
     return incrDecrCommand(redis_db, key, 1, ret);
 }
 
-int RsDecr(redisDbIF *db, robj *key, long long *ret)
+int RsDecr(redisDbIF db, robj *key, long long *ret)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -316,7 +316,7 @@ int RsDecr(redisDbIF *db, robj *key, long long *ret)
     return incrDecrCommand(redis_db, key, -1, ret);
 }
 
-int RsIncrBy(redisDbIF *db, robj *key, long long incr, long long *ret)
+int RsIncrBy(redisDbIF db, robj *key, long long incr, long long *ret)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -326,7 +326,7 @@ int RsIncrBy(redisDbIF *db, robj *key, long long incr, long long *ret)
     return incrDecrCommand(redis_db, key, incr, ret);
 }
 
-int RsDecrBy(redisDbIF *db, robj *key, long long incr, long long *ret)
+int RsDecrBy(redisDbIF db, robj *key, long long incr, long long *ret)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -336,7 +336,7 @@ int RsDecrBy(redisDbIF *db, robj *key, long long incr, long long *ret)
     return incrDecrCommand(redis_db, key, incr * (-1), ret);
 }
 
-int RsIncrByFloat(redisDbIF *db, robj *key, long double incr, long double *ret)
+int RsIncrByFloat(redisDbIF db, robj *key, long double incr, long double *ret)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -346,7 +346,7 @@ int RsIncrByFloat(redisDbIF *db, robj *key, long double incr, long double *ret)
     return incrbyfloatCommand(redis_db, key, incr, ret);
 }
 
-int RsAppend(redisDbIF *db, robj *key, robj *val, unsigned long *ret)
+int RsAppend(redisDbIF db, robj *key, robj *val, unsigned long *ret)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -356,7 +356,7 @@ int RsAppend(redisDbIF *db, robj *key, robj *val, unsigned long *ret)
     return appendCommand(redis_db, key, val, ret);
 }
 
-int RsGetRange(redisDbIF *db, robj *key, long start, long end, sds *val)
+int RsGetRange(redisDbIF db, robj *key, long start, long end, sds *val)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -366,7 +366,7 @@ int RsGetRange(redisDbIF *db, robj *key, long start, long end, sds *val)
     return getrangeCommand(redis_db, key, start, end, val);
 }
 
-int RsSetRange(redisDbIF *db, robj *key, long start, robj *val, unsigned long *ret)
+int RsSetRange(redisDbIF db, robj *key, long start, robj *val, unsigned long *ret)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -376,7 +376,7 @@ int RsSetRange(redisDbIF *db, robj *key, long start, robj *val, unsigned long *r
     return setrangeCommand(redis_db, key, start, val, ret);
 }
 
-int RsStrlen(redisDbIF* db, robj *key, int *val_len)
+int RsStrlen(redisDbIF db, robj *key, int *val_len)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -388,6 +388,6 @@ int RsStrlen(redisDbIF* db, robj *key, int *val_len)
         return REDIS_KEY_NOT_EXIST;
     }
     *val_len = stringObjectLen(vobj);
-    
+
     return C_OK;
 }

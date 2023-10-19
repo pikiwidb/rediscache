@@ -3,7 +3,7 @@
 #include <limits.h>
 #include <stdlib.h>
 
-#include "redisdbIF.h"
+#include "redis.h"
 #include "commondef.h"
 #include "commonfunc.h"
 #include "object.h"
@@ -250,7 +250,7 @@ static void SMembers(robj *subject,
     setTypeReleaseIterator(si);
 }
 
-int RsSAdd(redisDbIF *db, robj *key, robj *members[], unsigned long members_size)
+int RsSAdd(redisDbIF db, robj *key, robj *members[], unsigned long members_size)
 {
     if (NULL == db || NULL == key || NULL == members) {
         return REDIS_INVALID_ARG;
@@ -275,7 +275,7 @@ int RsSAdd(redisDbIF *db, robj *key, robj *members[], unsigned long members_size
     return C_OK;
 }
 
-int RsSCard(redisDbIF *db, robj *key, unsigned long *len)
+int RsSCard(redisDbIF db, robj *key, unsigned long *len)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -292,7 +292,7 @@ int RsSCard(redisDbIF *db, robj *key, unsigned long *len)
     return C_OK;
 }
 
-int RsSIsmember(redisDbIF *db, robj *key, robj *member, int *is_member)
+int RsSIsmember(redisDbIF db, robj *key, robj *member, int *is_member)
 {
     if (NULL == db || NULL == key || NULL == member) {
         return REDIS_INVALID_ARG;
@@ -309,7 +309,7 @@ int RsSIsmember(redisDbIF *db, robj *key, robj *member, int *is_member)
     return C_OK;
 }
 
-int RsSMembers(redisDbIF *db, robj *key, sds **members, unsigned long *members_size)
+int RsSMembers(redisDbIF db, robj *key, sds **members, unsigned long *members_size)
 {
     if (NULL == db || NULL == key || NULL == members) {
         return REDIS_INVALID_ARG;
@@ -326,7 +326,7 @@ int RsSMembers(redisDbIF *db, robj *key, sds **members, unsigned long *members_s
     return C_OK;
 }
 
-int RsSRem(redisDbIF *db, robj *key, robj *members[], unsigned long members_size)
+int RsSRem(redisDbIF db, robj *key, robj *members[], unsigned long members_size)
 {
     if (NULL == db || NULL == key || NULL == members) {
         return REDIS_INVALID_ARG;
@@ -351,7 +351,7 @@ int RsSRem(redisDbIF *db, robj *key, robj *members[], unsigned long members_size
     return C_ERR;
 }
 
-int RsSRandmember(redisDbIF *db, robj *key, long l, sds **members, unsigned long *members_size)
+int RsSRandmember(redisDbIF db, robj *key, long l, sds **members, unsigned long *members_size)
 {
     if (NULL == db || NULL == key || NULL == members) {
         return REDIS_INVALID_ARG;
@@ -400,7 +400,7 @@ int RsSRandmember(redisDbIF *db, robj *key, long l, sds **members, unsigned long
             }
             ++i;
         }
-    
+
         return C_OK;
     }
 

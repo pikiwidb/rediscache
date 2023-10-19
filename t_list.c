@@ -2,7 +2,7 @@
 #include <assert.h>
 #include <limits.h>
 
-#include "redisdbIF.h"
+#include "redis.h"
 #include "commondef.h"
 #include "commonfunc.h"
 #include "object.h"
@@ -212,7 +212,7 @@ static int popGenericCommand(redisDb *redis_db, robj *kobj, sds *element, int wh
     }
 }
 
-int RsLIndex(redisDbIF *db, robj *key, long index, sds *element)
+int RsLIndex(redisDbIF db, robj *key, long index, sds *element)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -242,7 +242,7 @@ int RsLIndex(redisDbIF *db, robj *key, long index, sds *element)
     return C_OK;
 }
 
-int RsLInsert(redisDbIF *db, robj *key, int where, robj *pivot, robj *val)
+int RsLInsert(redisDbIF db, robj *key, int where, robj *pivot, robj *val)
 {
     if (NULL == db || NULL == key || NULL == pivot || NULL == val) {
         return REDIS_INVALID_ARG;
@@ -268,7 +268,7 @@ int RsLInsert(redisDbIF *db, robj *key, int where, robj *pivot, robj *val)
     return C_OK;
 }
 
-int RsLLen(redisDbIF *db, robj *key, unsigned long *len)
+int RsLLen(redisDbIF db, robj *key, unsigned long *len)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -285,7 +285,7 @@ int RsLLen(redisDbIF *db, robj *key, unsigned long *len)
     return C_OK;
 }
 
-int RsLPop(redisDbIF *db, robj *key, sds *element)
+int RsLPop(redisDbIF db, robj *key, sds *element)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -295,7 +295,7 @@ int RsLPop(redisDbIF *db, robj *key, sds *element)
     return popGenericCommand(redis_db, key, element, REDIS_LIST_HEAD);
 }
 
-int RsLPush(redisDbIF *db, robj *key, robj *vals[], unsigned long vals_size)
+int RsLPush(redisDbIF db, robj *key, robj *vals[], unsigned long vals_size)
 {
     if (NULL == db || NULL == key || NULL == vals) {
         return REDIS_INVALID_ARG;
@@ -305,7 +305,7 @@ int RsLPush(redisDbIF *db, robj *key, robj *vals[], unsigned long vals_size)
     return pushGenericCommand(redis_db, key, vals, vals_size, REDIS_LIST_HEAD);
 }
 
-int RsLPushx(redisDbIF *db, robj *key, robj *vals[], unsigned long vals_size)
+int RsLPushx(redisDbIF db, robj *key, robj *vals[], unsigned long vals_size)
 {
     if (NULL == db || NULL == key || NULL == vals) {
         return REDIS_INVALID_ARG;
@@ -315,7 +315,7 @@ int RsLPushx(redisDbIF *db, robj *key, robj *vals[], unsigned long vals_size)
     return pushxGenericCommand(redis_db, key, vals, vals_size, REDIS_LIST_HEAD);
 }
 
-int RsLRange(redisDbIF *db, robj *key, long start, long end, sds **vals, unsigned long *vals_size)
+int RsLRange(redisDbIF db, robj *key, long start, long end, sds **vals, unsigned long *vals_size)
 {
     if (NULL == db || NULL == key || NULL == vals) {
         return REDIS_INVALID_ARG;
@@ -371,7 +371,7 @@ int RsLRange(redisDbIF *db, robj *key, long start, long end, sds **vals, unsigne
     return C_OK;
 }
 
-int RsLRem(redisDbIF *db, robj *key, long count, robj *val)
+int RsLRem(redisDbIF db, robj *key, long count, robj *val)
 {
     if (NULL == db || NULL == key || NULL == val) {
         return REDIS_INVALID_ARG;
@@ -409,7 +409,7 @@ int RsLRem(redisDbIF *db, robj *key, long count, robj *val)
     return C_OK;
 }
 
-int RsLSet(redisDbIF *db, robj *key, long index, robj *val)
+int RsLSet(redisDbIF db, robj *key, long index, robj *val)
 {
     if (NULL == db || NULL == key || NULL == val) {
         return REDIS_INVALID_ARG;
@@ -435,7 +435,7 @@ int RsLSet(redisDbIF *db, robj *key, long index, robj *val)
     return C_OK;
 }
 
-int RsLTrim(redisDbIF *db, robj *key, long start, long end)
+int RsLTrim(redisDbIF db, robj *key, long start, long end)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -481,7 +481,7 @@ int RsLTrim(redisDbIF *db, robj *key, long start, long end)
     return C_OK;
 }
 
-int RsRPop(redisDbIF *db, robj *key, sds *element)
+int RsRPop(redisDbIF db, robj *key, sds *element)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -491,7 +491,7 @@ int RsRPop(redisDbIF *db, robj *key, sds *element)
     return popGenericCommand(redis_db, key, element, REDIS_LIST_TAIL);
 }
 
-int RsRPush(redisDbIF *db, robj *key, robj *vals[], unsigned long vals_size)
+int RsRPush(redisDbIF db, robj *key, robj *vals[], unsigned long vals_size)
 {
     if (NULL == db || NULL == key || NULL == vals) {
         return REDIS_INVALID_ARG;
@@ -501,7 +501,7 @@ int RsRPush(redisDbIF *db, robj *key, robj *vals[], unsigned long vals_size)
     return pushGenericCommand(redis_db, key, vals, vals_size, REDIS_LIST_TAIL);
 }
 
-int RsRPushx(redisDbIF *db, robj *key, robj *vals[], unsigned long vals_size)
+int RsRPushx(redisDbIF db, robj *key, robj *vals[], unsigned long vals_size)
 {
     if (NULL == db || NULL == key || NULL == vals) {
         return REDIS_INVALID_ARG;
