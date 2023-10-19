@@ -59,12 +59,12 @@ void RsSetConfig(db_config* cfg)
     atomicSet(g_db_config.lfu_decay_time,cfg->lfu_decay_time);
 }
 
-redisDbIF RsCreateDbHandle(void)
+redisCache RsCreateDbHandle(void)
 {
     return createRedisDb();
 }
 
-void RsDestroyDbHandle(redisDbIF db)
+void RsDestroyDbHandle(redisCache db)
 {
     if (db) {
         redisDb *redis_db = (redisDb*)db;
@@ -72,7 +72,7 @@ void RsDestroyDbHandle(redisDbIF db)
     }
 }
 
-int RsFreeMemoryIfNeeded(redisDbIF db)
+int RsFreeMemoryIfNeeded(redisCache db)
 {
     if (NULL == db) return REDIS_INVALID_ARG;
 
@@ -80,7 +80,7 @@ int RsFreeMemoryIfNeeded(redisDbIF db)
     return freeMemoryIfNeeded(redis_db);
 }
 
-int RsActiveExpireCycle(redisDbIF db)
+int RsActiveExpireCycle(redisCache db)
 {
     if (NULL == db) return REDIS_INVALID_ARG;
 
@@ -108,7 +108,7 @@ void RsResetHitAndMissNum(void)
 /*-----------------------------------------------------------------------------
  * Normal Commands
  *----------------------------------------------------------------------------*/
-int RsExpire(redisDbIF db, robj *key, robj *expire)
+int RsExpire(redisCache db, robj *key, robj *expire)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -118,7 +118,7 @@ int RsExpire(redisDbIF db, robj *key, robj *expire)
     return expireGenericCommand(redis_db, key, expire, mstime(), UNIT_SECONDS);
 }
 
-int RsExpireat(redisDbIF db, robj *key, robj *expire)
+int RsExpireat(redisCache db, robj *key, robj *expire)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -128,7 +128,7 @@ int RsExpireat(redisDbIF db, robj *key, robj *expire)
     return expireGenericCommand(redis_db, key, expire, 0, UNIT_SECONDS);
 }
 
-int RsTTL(redisDbIF db, robj *key, int64_t *ttl)
+int RsTTL(redisCache db, robj *key, int64_t *ttl)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -150,7 +150,7 @@ int RsTTL(redisDbIF db, robj *key, int64_t *ttl)
     return C_OK;
 }
 
-int RsPersist(redisDbIF db, robj *key)
+int RsPersist(redisCache db, robj *key)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -165,7 +165,7 @@ int RsPersist(redisDbIF db, robj *key)
     return C_OK;
 }
 
-int RsType(redisDbIF db, robj *key, sds *val)
+int RsType(redisCache db, robj *key, sds *val)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -192,7 +192,7 @@ int RsType(redisDbIF db, robj *key, sds *val)
     return C_OK;
 }
 
-int RsDel(redisDbIF db, robj *key)
+int RsDel(redisCache db, robj *key)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -206,7 +206,7 @@ int RsDel(redisDbIF db, robj *key)
     return C_OK;
 }
 
-int RsExists(redisDbIF db, robj *key)
+int RsExists(redisCache db, robj *key)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -216,7 +216,7 @@ int RsExists(redisDbIF db, robj *key)
     return dbExists(redis_db, key);
 }
 
-int RsDbSize(redisDbIF db, long long *dbsize)
+int RsDbSize(redisCache db, long long *dbsize)
 {
     if (NULL == db) {
         return REDIS_INVALID_ARG;
@@ -228,7 +228,7 @@ int RsDbSize(redisDbIF db, long long *dbsize)
     return C_OK;
 }
 
-int RsFlushDb(redisDbIF db)
+int RsFlushDb(redisCache db)
 {
     if (NULL == db) {
         return REDIS_INVALID_ARG;
@@ -240,7 +240,7 @@ int RsFlushDb(redisDbIF db)
     return C_OK;
 }
 
-int RsRandomkey(redisDbIF db, sds *key)
+int RsRandomkey(redisCache db, sds *key)
 {
     if (NULL == db) {
         return REDIS_INVALID_ARG;
