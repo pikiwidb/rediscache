@@ -142,7 +142,7 @@ static int zrangeGenericCommand(redisDb *redis_db,
     unsigned long rangelen = (end-start)+1;
 
     *items_size = rangelen;
-    *items = (zitem*)zcalloc(sizeof(zitem) * (*items_size));
+    *items = (zitem*)zcallocate(sizeof(zitem) * (*items_size));
 
     if (zobj->encoding == OBJ_ENCODING_ZIPLIST) {
         unsigned char *zl = zobj->ptr;
@@ -244,7 +244,7 @@ static int genericZrangebyscoreCommand(redisDb *redis_db,
     unsigned int len = zsetLength(zobj);
     unsigned int zlloc_len = len;
     zlloc_len = (limit > 0 && limit < len) ? limit : len;
-    *items = (zitem*)zcalloc(sizeof(zitem) * zlloc_len);
+    *items = (zitem*)zcallocate(sizeof(zitem) * zlloc_len);
 
     int withscores = 1;
     unsigned long rangelen = 0;
@@ -409,7 +409,7 @@ static int genericZrangebylexCommand(redisDb *redis_db,
     }
 
     unsigned int len = zsetLength(zobj);
-    *members = (sds *)zcalloc(sizeof(sds) * len);
+    *members = (sds *)zcallocate(sizeof(sds) * len);
     sds *arrays = *members;
 
     long offset = 0, limit = -1;
