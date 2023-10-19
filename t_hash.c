@@ -590,7 +590,7 @@ static int genericHgetall(redisDb *redis_db, robj *kobj, hitem **items, unsigned
         || checkType(o,OBJ_HASH)) return REDIS_KEY_NOT_EXIST;
 
     *items_size = hashTypeLength(o);
-    *items = (hitem*)zcallocm(sizeof(hitem) * (*items_size));
+    *items = (hitem*)zcallocate(sizeof(hitem) * (*items_size));
 
     hi = hashTypeInitIterator(o);
     unsigned long i = 0;

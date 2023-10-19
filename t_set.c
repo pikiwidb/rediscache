@@ -229,7 +229,7 @@ static void SMembers(robj *subject,
                     unsigned long *members_size) {
 
     *members_size = setTypeSize(subject);
-    *members = (sds *)zcallocm(sizeof(sds) * (*members_size));
+    *members = (sds *)zcallocate(sizeof(sds) * (*members_size));
     sds *arrays = *members;
 
     unsigned long i = 0;
@@ -388,7 +388,7 @@ int RsSRandmember(redisDbIF *db, robj *key, long l, sds **members, unsigned long
     int encoding;
     if (!uniq) {
         *members_size = count;
-        *members = (sds *)zcallocm(sizeof(sds) * count);
+        *members = (sds *)zcallocate(sizeof(sds) * count);
         sds *arrays = *members;
         int i = 0;
         while(count--) {
@@ -483,7 +483,7 @@ int RsSRandmember(redisDbIF *db, robj *key, long l, sds **members, unsigned long
         unsigned long i = 0;
         dictEntry *de;
         *members_size = count;
-        *members = (sds *)zcallocm(sizeof(sds) * count);
+        *members = (sds *)zcallocate(sizeof(sds) * count);
         sds *arrays = *members;
 
         dictIterator *di = dictGetIterator(d);
