@@ -3,7 +3,7 @@
 #include <limits.h>
 #include <stdio.h>
 
-#include "redisdbIF.h"
+#include "redis.h"
 #include "commondef.h"
 #include "commonfunc.h"
 #include "zmalloc.h"
@@ -44,7 +44,7 @@ static int checkStringLength(long long size)
 #define OBJ_SET_EX (1<<2)     /* Set if time in seconds is given */
 #define OBJ_SET_PX (1<<3)     /* Set if time in ms in given */
 
-static int setGenericCommand(redisDb *redis_db, robj *kobj, robj *vobj, robj *expire, int unit, int flags) {
+static int setGenericCommand(redisCache *redis_cache, robj *kobj, robj *vobj, robj *expire, int unit, int flags) {
     long long milliseconds = 0; /* initialized to avoid any harmness warning */
 
     if (expire) {
@@ -56,22 +56,22 @@ static int setGenericCommand(redisDb *redis_db, robj *kobj, robj *vobj, robj *ex
         if (unit == UNIT_SECONDS) milliseconds *= 1000;
     }
 
-    if ((flags & OBJ_SET_NX && lookupKeyWrite(redis_db,kobj) != NULL) ||
-        (flags & OBJ_SET_XX && lookupKeyWrite(redis_db,kobj) == NULL)) {
+    if ((flags & OBJ_SET_NX && lookupKeyWrite(redis_cache,kobj) != NULL) ||
+        (flags & OBJ_SET_XX && lookupKeyWrite(redis_cache,kobj) == NULL)) {
         return C_ERR;
     }
-    setKey(redis_db, kobj, vobj);
+    setKey(redis_cache, kobj, vobj);
 
-    if (expire) setExpire(redis_db, kobj, mstime()+milliseconds);
+    if (expire) setExpire(redis_cache, kobj, mstime()+milliseconds);
 
     return C_OK;
 }
 
-static int incrDecrCommand(redisDb *redis_db, robj *kobj, long long incr, long long *ret) {
+static int incrDecrCommand(redisCache *redis_cache, robj *kobj, long long incr, long long *ret) {
     long long value, oldvalue;
     robj *o, *new;
 
-    o = lookupKeyWrite(redis_db,kobj);
+    o = lookupKeyWrite(redis_cache,kobj);
     if (o != NULL && checkType(o,OBJ_STRING)) return REDIS_INVALID_TYPE;
     if (getLongLongFromObject(o,&value) != C_OK) return REDIS_INVALID_TYPE;
 
@@ -92,21 +92,21 @@ static int incrDecrCommand(redisDb *redis_db, robj *kobj, long long incr, long l
     } else {
         new = createStringObjectFromLongLong(value);
         if (o) {
-            dbOverwrite(redis_db,kobj,new);
+            dbOverwrite(redis_cache,kobj,new);
         } else {
-            dbAdd(redis_db,kobj,new);
+            dbAdd(redis_cache,kobj,new);
         }
     }
 
     return C_OK;
 }
 
-static int incrbyfloatCommand(redisDb *redis_db, robj *kobj, long double incr, long double *ret)
+static int incrbyfloatCommand(redisCache *redis_cache, robj *kobj, long double incr, long double *ret)
 {
     long double value;
     robj *o, *new;
 
-    o = lookupKeyWrite(redis_db,kobj);
+    o = lookupKeyWrite(redis_cache,kobj);
     if (o != NULL && checkType(o,OBJ_STRING)) return REDIS_INVALID_TYPE;
     if (getLongDoubleFromObject(o,&value) != C_OK) return REDIS_INVALID_TYPE;
 
@@ -118,23 +118,23 @@ static int incrbyfloatCommand(redisDb *redis_db, robj *kobj, long double incr, l
     new = createStringObjectFromLongDouble(value, 1);
 
     if (o)
-        dbOverwrite(redis_db,kobj,new);
+        dbOverwrite(redis_cache,kobj,new);
     else
-        dbAdd(redis_db,kobj,new);
+        dbAdd(redis_cache,kobj,new);
 
     return C_OK;
 }
 
-static int appendCommand(redisDb *redis_db, robj *kobj, robj *vobj, unsigned long *ret)
+static int appendCommand(redisCache *redis_cache, robj *kobj, robj *vobj, unsigned long *ret)
 {
     size_t totlen;
     robj *o, *append;
 
-    o = lookupKeyWrite(redis_db,kobj);
+    o = lookupKeyWrite(redis_cache,kobj);
     if (o == NULL) {
         /* Create the key */
         // c->argv[2] = tryObjectEncoding(c->argv[2]);
-        dbAdd(redis_db,kobj,vobj);
+        dbAdd(redis_cache,kobj,vobj);
         incrRefCount(vobj);
         totlen = stringObjectLen(vobj);
     } else {
@@ -149,7 +149,7 @@ static int appendCommand(redisDb *redis_db, robj *kobj, robj *vobj, unsigned lon
             return REDIS_OVERFLOW;
 
         /* Append the value */
-        o = dbUnshareStringValue(redis_db,kobj,o);
+        o = dbUnshareStringValue(redis_cache,kobj,o);
         o->ptr = sdscatlen(o->ptr,append->ptr,sdslen(append->ptr));
         totlen = sdslen(o->ptr);
     }
@@ -159,7 +159,7 @@ static int appendCommand(redisDb *redis_db, robj *kobj, robj *vobj, unsigned lon
     return C_OK;
 }
 
-static int getrangeCommand(redisDb *redis_db,
+static int getrangeCommand(redisCache *redis_cache,
                            robj *kobj,
                            long start,
                            long end,
@@ -169,7 +169,7 @@ static int getrangeCommand(redisDb *redis_db,
     char *str, llbuf[32];
     size_t strlen;
 
-    if ((o = lookupKeyRead(redis_db, kobj)) == NULL) return REDIS_KEY_NOT_EXIST;
+    if ((o = lookupKeyRead(redis_cache, kobj)) == NULL) return REDIS_KEY_NOT_EXIST;
     if (checkType(o,OBJ_STRING)) return REDIS_INVALID_TYPE;
 
     if (o->encoding == OBJ_ENCODING_INT) {
@@ -203,14 +203,14 @@ static int getrangeCommand(redisDb *redis_db,
     return C_OK;
 }
 
-static int setrangeCommand(redisDb *redis_db, robj *kobj, long offset, robj *vobj, unsigned long *ret)
+static int setrangeCommand(redisCache *redis_cache, robj *kobj, long offset, robj *vobj, unsigned long *ret)
 {
     robj *o;
     sds value = vobj->ptr;
 
     if (offset < 0) return REDIS_INVALID_ARG;
 
-    o = lookupKeyWrite(redis_db,kobj);
+    o = lookupKeyWrite(redis_cache,kobj);
     if (o == NULL) {
         /* Return 0 when setting nothing on a non-existing string */
         if (sdslen(value) == 0) {
@@ -222,7 +222,7 @@ static int setrangeCommand(redisDb *redis_db, robj *kobj, long offset, robj *vob
         if (checkStringLength(offset+sdslen(value)) != C_OK) return REDIS_OVERFLOW;
 
         o = createObject(OBJ_STRING,sdsempty());
-        dbAdd(redis_db,kobj,o);
+        dbAdd(redis_cache,kobj,o);
     } else {
 
         /* Key exists, check type */
@@ -238,7 +238,7 @@ static int setrangeCommand(redisDb *redis_db, robj *kobj, long offset, robj *vob
         if (checkStringLength(offset+sdslen(value)) != C_OK) return REDIS_OVERFLOW;
 
         /* Create a copy when the object is shared or encoded. */
-        o = dbUnshareStringValue(redis_db,kobj,o);
+        o = dbUnshareStringValue(redis_cache,kobj,o);
     }
 
     if (sdslen(value) > 0) {
@@ -250,44 +250,44 @@ static int setrangeCommand(redisDb *redis_db, robj *kobj, long offset, robj *vob
     return C_OK;
 }
 
-int RsSet(redisDbIF* db, robj *key, robj *val, robj *expire)
+int RsSet(redisCache cache, robj *key, robj *val, robj *expire)
 {
-    if (NULL == db || NULL == key || NULL == val) {
+    if (NULL == cache || NULL == key || NULL == val) {
         return REDIS_INVALID_ARG;
     }
-    redisDb *redis_db = (redisDb*)db;
+    redisCache *redis_cache = (redisCache*)cache;
 
-    return setGenericCommand(redis_db, key, val, expire, UNIT_SECONDS, OBJ_SET_NO_FLAGS);
+    return setGenericCommand(redis_cache, key, val, expire, UNIT_SECONDS, OBJ_SET_NO_FLAGS);
 }
 
-int RsSetnx(redisDbIF *db, robj *key, robj *val, robj *expire)
+int RsSetnx(redisCache cache, robj *key, robj *val, robj *expire)
 {
-    if (NULL == db || NULL == key || NULL == val) {
+    if (NULL == cache || NULL == key || NULL == val) {
         return REDIS_INVALID_ARG;
     }
-    redisDb *redis_db = (redisDb*)db;
+    redisCache *redis_cache = (redisCache*)cache;
 
-    return setGenericCommand(redis_db, key, val, expire, UNIT_SECONDS, OBJ_SET_NX);;
+    return setGenericCommand(redis_cache, key, val, expire, UNIT_SECONDS, OBJ_SET_NX);;
 }
 
-int RsSetxx(redisDbIF *db, robj *key, robj *val, robj *expire)
+int RsSetxx(redisCache cache, robj *key, robj *val, robj *expire)
 {
-    if (NULL == db || NULL == key || NULL == val) {
+    if (NULL == cache || NULL == key || NULL == val) {
         return REDIS_INVALID_ARG;
     }
-    redisDb *redis_db = (redisDb*)db;
+    redisCache *redis_cache = (redisCache*)cache;
 
-    return setGenericCommand(redis_db, key, val, expire, UNIT_SECONDS, OBJ_SET_XX);;
+    return setGenericCommand(redis_cache, key, val, expire, UNIT_SECONDS, OBJ_SET_XX);;
 }
 
-int RsGet(redisDbIF *db, robj *key, robj **val)
+int RsGet(redisCache cache, robj *key, robj **val)
 {
-    if (NULL == db || NULL == key) {
+    if (NULL == cache || NULL == key) {
         return REDIS_INVALID_ARG;
     }
-    redisDb *redis_db = (redisDb*)db;
+    redisCache *redis_cache = (redisCache*)cache;
 
-    robj *vobj = lookupKeyRead(redis_db, key);
+    robj *vobj = lookupKeyRead(redis_cache, key);
     if (NULL == vobj || OBJ_STRING != vobj->type) {
         return REDIS_KEY_NOT_EXIST;
     }
@@ -296,98 +296,98 @@ int RsGet(redisDbIF *db, robj *key, robj **val)
     return C_OK;
 }
 
-int RsIncr(redisDbIF *db, robj *key, long long *ret)
+int RsIncr(redisCache cache, robj *key, long long *ret)
 {
-    if (NULL == db || NULL == key) {
+    if (NULL == cache || NULL == key) {
         return REDIS_INVALID_ARG;
     }
-    redisDb *redis_db = (redisDb*)db;
+    redisCache *redis_cache = (redisCache*)cache;
 
-    return incrDecrCommand(redis_db, key, 1, ret);
+    return incrDecrCommand(redis_cache, key, 1, ret);
 }
 
-int RsDecr(redisDbIF *db, robj *key, long long *ret)
+int RsDecr(redisCache cache, robj *key, long long *ret)
 {
-    if (NULL == db || NULL == key) {
+    if (NULL == cache || NULL == key) {
         return REDIS_INVALID_ARG;
     }
-    redisDb *redis_db = (redisDb*)db;
+    redisCache *redis_cache = (redisCache*)cache;
 
-    return incrDecrCommand(redis_db, key, -1, ret);
+    return incrDecrCommand(redis_cache, key, -1, ret);
 }
 
-int RsIncrBy(redisDbIF *db, robj *key, long long incr, long long *ret)
+int RsIncrBy(redisCache cache, robj *key, long long incr, long long *ret)
 {
-    if (NULL == db || NULL == key) {
+    if (NULL == cache || NULL == key) {
         return REDIS_INVALID_ARG;
     }
-    redisDb *redis_db = (redisDb*)db;
+    redisCache *redis_cache = (redisCache*)cache;
 
-    return incrDecrCommand(redis_db, key, incr, ret);
+    return incrDecrCommand(redis_cache, key, incr, ret);
 }
 
-int RsDecrBy(redisDbIF *db, robj *key, long long incr, long long *ret)
+int RsDecrBy(redisCache cache, robj *key, long long incr, long long *ret)
 {
-    if (NULL == db || NULL == key) {
+    if (NULL == cache || NULL == key) {
         return REDIS_INVALID_ARG;
     }
-    redisDb *redis_db = (redisDb*)db;
+    redisCache *redis_cache = (redisCache*)cache;
 
-    return incrDecrCommand(redis_db, key, incr * (-1), ret);
+    return incrDecrCommand(redis_cache, key, incr * (-1), ret);
 }
 
-int RsIncrByFloat(redisDbIF *db, robj *key, long double incr, long double *ret)
+int RsIncrByFloat(redisCache cache, robj *key, long double incr, long double *ret)
 {
-    if (NULL == db || NULL == key) {
+    if (NULL == cache || NULL == key) {
         return REDIS_INVALID_ARG;
     }
-    redisDb *redis_db = (redisDb*)db;
+    redisCache *redis_cache = (redisCache*)cache;
 
-    return incrbyfloatCommand(redis_db, key, incr, ret);
+    return incrbyfloatCommand(redis_cache, key, incr, ret);
 }
 
-int RsAppend(redisDbIF *db, robj *key, robj *val, unsigned long *ret)
+int RsAppend(redisCache cache, robj *key, robj *val, unsigned long *ret)
 {
-    if (NULL == db || NULL == key) {
+    if (NULL == cache || NULL == key) {
         return REDIS_INVALID_ARG;
     }
-    redisDb *redis_db = (redisDb*)db;
+    redisCache *redis_cache = (redisCache*)cache;
 
-    return appendCommand(redis_db, key, val, ret);
+    return appendCommand(redis_cache, key, val, ret);
 }
 
-int RsGetRange(redisDbIF *db, robj *key, long start, long end, sds *val)
+int RsGetRange(redisCache cache, robj *key, long start, long end, sds *val)
 {
-    if (NULL == db || NULL == key) {
+    if (NULL == cache || NULL == key) {
         return REDIS_INVALID_ARG;
     }
-    redisDb *redis_db = (redisDb*)db;
+    redisCache *redis_cache = (redisCache*)cache;
 
-    return getrangeCommand(redis_db, key, start, end, val);
+    return getrangeCommand(redis_cache, key, start, end, val);
 }
 
-int RsSetRange(redisDbIF *db, robj *key, long start, robj *val, unsigned long *ret)
+int RsSetRange(redisCache cache, robj *key, long start, robj *val, unsigned long *ret)
 {
-    if (NULL == db || NULL == key) {
+    if (NULL == cache || NULL == key) {
         return REDIS_INVALID_ARG;
     }
-    redisDb *redis_db = (redisDb*)db;
+    redisCache *redis_cache = (redisCache*)cache;
 
-    return setrangeCommand(redis_db, key, start, val, ret);
+    return setrangeCommand(redis_cache, key, start, val, ret);
 }
 
-int RsStrlen(redisDbIF* db, robj *key, int *val_len)
+int RsStrlen(redisCache cache, robj *key, int *val_len)
 {
-    if (NULL == db || NULL == key) {
+    if (NULL == cache || NULL == key) {
         return REDIS_INVALID_ARG;
     }
-    redisDb *redis_db = (redisDb*)db;
+    redisCache *redis_cache = (redisCache*)cache;
 
-    robj *vobj = lookupKeyRead(redis_db, key);
+    robj *vobj = lookupKeyRead(redis_cache, key);
     if (NULL == vobj || OBJ_STRING != vobj->type) {
         return REDIS_KEY_NOT_EXIST;
     }
     *val_len = stringObjectLen(vobj);
-    
+
     return C_OK;
 }
