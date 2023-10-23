@@ -30,120 +30,120 @@ typedef struct _zitem {
 /*-----------------------------------------------------------------------------
  * Server APIS
  *----------------------------------------------------------------------------*/
-void RsSetConfig(db_config* cfg);
-redisCache RsCreateCacheHandle(void);
-void RsDestroyCacheHandle(redisCache cache);
-int RsFreeMemoryIfNeeded(redisCache cache);
-int RsActiveExpireCycle(redisCache cache);
-size_t RsGetUsedMemory(void);
-void RsGetHitAndMissNum(long long *hits, long long *misses);
-void RsResetHitAndMissNum(void);
+void RcSetConfig(db_config* cfg);
+redisCache RcCreateCacheHandle(void);
+void RcDestroyCacheHandle(redisCache cache);
+int RcFreeMemoryIfNeeded(redisCache cache);
+int RcActiveExpireCycle(redisCache cache);
+size_t RcGetUsedMemory(void);
+void RcGetHitAndMissNum(long long *hits, long long *misses);
+void RcResetHitAndMissNum(void);
 
 /*-----------------------------------------------------------------------------
  * Normal Commands
  *----------------------------------------------------------------------------*/
-int RsExpire(redisCache cache, robj *key, robj *expire);
-int RsExpireat(redisCache cache, robj *key, robj *expire);
-int RsTTL(redisCache cache, robj *key, int64_t *ttl);
-int RsPersist(redisCache cache, robj *key);
-int RsType(redisCache cache, robj *key, sds *val);
-int RsDel(redisCache cache, robj *key);
-int RsExists(redisCache cache, robj *key);
-int RsCacheSize(redisCache cache, long long *dbsize);
-int RsFlushCache(redisCache cache);
-int RsRandomkey(redisCache cache, sds *key);
+int RcExpire(redisCache cache, robj *key, robj *expire);
+int RcExpireat(redisCache cache, robj *key, robj *expire);
+int RcTTL(redisCache cache, robj *key, int64_t *ttl);
+int RcPersist(redisCache cache, robj *key);
+int RcType(redisCache cache, robj *key, sds *val);
+int RcDel(redisCache cache, robj *key);
+int RcExists(redisCache cache, robj *key);
+int RcCacheSize(redisCache cache, long long *dbsize);
+int RcFlushCache(redisCache cache);
+int RcRandomkey(redisCache cache, sds *key);
 
 /*-----------------------------------------------------------------------------
  * String Commands
  *----------------------------------------------------------------------------*/
-int RsSet(redisCache cache, robj *key, robj *val, robj *expire);
-int RsSetnx(redisCache cache, robj *key, robj *val, robj *expire);
-int RsSetxx(redisCache cache, robj *key, robj *val, robj *expire);
-int RsGet(redisCache cache, robj *key, robj **val);
-int RsIncr(redisCache cache, robj *key, long long *ret);
-int RsDecr(redisCache cache, robj *key, long long *ret);
-int RsIncrBy(redisCache cache, robj *key, long long incr, long long *ret);
-int RsDecrBy(redisCache cache, robj *key, long long incr, long long *ret);
-int RsIncrByFloat(redisCache cache, robj *key, long double incr, long double *ret);
-int RsAppend(redisCache cache, robj *key, robj *val, unsigned long *ret);
-int RsGetRange(redisCache cache, robj *key, long start, long end, sds *val);
-int RsSetRange(redisCache cache, robj *key, long start, robj *val, unsigned long *ret);
-int RsStrlen(redisCache cache, robj *key, int *val_len);
+int RcSet(redisCache cache, robj *key, robj *val, robj *expire);
+int RcSetnx(redisCache cache, robj *key, robj *val, robj *expire);
+int RcSetxx(redisCache cache, robj *key, robj *val, robj *expire);
+int RcGet(redisCache cache, robj *key, robj **val);
+int RcIncr(redisCache cache, robj *key, long long *ret);
+int RcDecr(redisCache cache, robj *key, long long *ret);
+int RcIncrBy(redisCache cache, robj *key, long long incr, long long *ret);
+int RcDecrBy(redisCache cache, robj *key, long long incr, long long *ret);
+int RcIncrByFloat(redisCache cache, robj *key, long double incr, long double *ret);
+int RcAppend(redisCache cache, robj *key, robj *val, unsigned long *ret);
+int RcGetRange(redisCache cache, robj *key, long start, long end, sds *val);
+int RcSetRange(redisCache cache, robj *key, long start, robj *val, unsigned long *ret);
+int RcStrlen(redisCache cache, robj *key, int *val_len);
 
 /*-----------------------------------------------------------------------------
  * Hash type commands
  *----------------------------------------------------------------------------*/
-int RsHDel(redisCache cache, robj *key, robj *fields[], unsigned long fields_size, unsigned long *ret);
-int RsHSet(redisCache cache, robj *key, robj *field, robj *val);
-int RsHSetnx(redisCache cache, robj *key, robj *field, robj *val);
-int RsHMSet(redisCache cache, robj *key, robj *items[], unsigned long items_size);
-int RsHGet(redisCache cache, robj *key, robj *field, sds *val);
-int RsHMGet(redisCache cache, robj *key, hitem *items, unsigned long items_size);
-int RsHGetAll(redisCache cache, robj *key, hitem **items, unsigned long *items_size);
-int RsHKeys(redisCache cache, robj *key, hitem **items, unsigned long *items_size);
-int RsHVals(redisCache cache, robj *key, hitem **items, unsigned long *items_size);
-int RsHExists(redisCache cache, robj *key, robj *field, int *is_exist);
-int RsHIncrby(redisCache cache, robj *key, robj *field, long long val, long long *ret);
-int RsHIncrbyfloat(redisCache cache, robj *key, robj *field, long double val, long double *ret);
-int RsHlen(redisCache cache, robj *key, unsigned long *len);
-int RsHStrlen(redisCache cache, robj *key, robj *field, unsigned long *len);
+int RcHDel(redisCache cache, robj *key, robj *fields[], unsigned long fields_size, unsigned long *ret);
+int RcHSet(redisCache cache, robj *key, robj *field, robj *val);
+int RcHSetnx(redisCache cache, robj *key, robj *field, robj *val);
+int RcHMSet(redisCache cache, robj *key, robj *items[], unsigned long items_size);
+int RcHGet(redisCache cache, robj *key, robj *field, sds *val);
+int RcHMGet(redisCache cache, robj *key, hitem *items, unsigned long items_size);
+int RcHGetAll(redisCache cache, robj *key, hitem **items, unsigned long *items_size);
+int RcHKeys(redisCache cache, robj *key, hitem **items, unsigned long *items_size);
+int RcHVals(redisCache cache, robj *key, hitem **items, unsigned long *items_size);
+int RcHExists(redisCache cache, robj *key, robj *field, int *is_exist);
+int RcHIncrby(redisCache cache, robj *key, robj *field, long long val, long long *ret);
+int RcHIncrbyfloat(redisCache cache, robj *key, robj *field, long double val, long double *ret);
+int RcHlen(redisCache cache, robj *key, unsigned long *len);
+int RcHStrlen(redisCache cache, robj *key, robj *field, unsigned long *len);
 
 /*-----------------------------------------------------------------------------
  * List Commands
  *----------------------------------------------------------------------------*/
-int RsLIndex(redisCache cache, robj *key, long index, sds *element);
-int RsLInsert(redisCache cache, robj *key, int where, robj *pivot, robj *val);
-int RsLLen(redisCache cache, robj *key, unsigned long *len);
-int RsLPop(redisCache cache, robj *key, sds *element);
-int RsLPush(redisCache cache, robj *key, robj *vals[], unsigned long vals_size);
-int RsLPushx(redisCache cache, robj *key, robj *vals[], unsigned long vals_size);
-int RsLRange(redisCache cache, robj *key, long start, long end, sds **vals, unsigned long *vals_size);
-int RsLRem(redisCache cache, robj *key, long count, robj *val);
-int RsLSet(redisCache cache, robj *key, long index, robj *val);
-int RsLTrim(redisCache cache, robj *key, long start, long end);
-int RsRPop(redisCache cache, robj *key, sds *element);
-int RsRPush(redisCache cache, robj *key, robj *vals[], unsigned long vals_size);
-int RsRPushx(redisCache cache, robj *key, robj *vals[], unsigned long vals_size);
+int RcLIndex(redisCache cache, robj *key, long index, sds *element);
+int RcLInsert(redisCache cache, robj *key, int where, robj *pivot, robj *val);
+int RcLLen(redisCache cache, robj *key, unsigned long *len);
+int RcLPop(redisCache cache, robj *key, sds *element);
+int RcLPush(redisCache cache, robj *key, robj *vals[], unsigned long vals_size);
+int RcLPushx(redisCache cache, robj *key, robj *vals[], unsigned long vals_size);
+int RcLRange(redisCache cache, robj *key, long start, long end, sds **vals, unsigned long *vals_size);
+int RcLRem(redisCache cache, robj *key, long count, robj *val);
+int RcLSet(redisCache cache, robj *key, long index, robj *val);
+int RcLTrim(redisCache cache, robj *key, long start, long end);
+int RcRPop(redisCache cache, robj *key, sds *element);
+int RcRPush(redisCache cache, robj *key, robj *vals[], unsigned long vals_size);
+int RcRPushx(redisCache cache, robj *key, robj *vals[], unsigned long vals_size);
 
 /*-----------------------------------------------------------------------------
  * Set Commands
  *----------------------------------------------------------------------------*/
-int RsSAdd(redisCache cache, robj *key, robj *members[], unsigned long members_size);
-int RsSCard(redisCache cache, robj *key, unsigned long *len);
-int RsSIsmember(redisCache cache, robj *key, robj *member, int *is_member);
-int RsSMembers(redisCache cache, robj *key, sds **members, unsigned long *members_size);
-int RsSRem(redisCache cache, robj *key, robj *members[], unsigned long members_size);
-int RsSRandmember(redisCache cache, robj *key, long l, sds **members, unsigned long *members_size);
+int RcSAdd(redisCache cache, robj *key, robj *members[], unsigned long members_size);
+int RcSCard(redisCache cache, robj *key, unsigned long *len);
+int RcSIsmember(redisCache cache, robj *key, robj *member, int *is_member);
+int RcSMembers(redisCache cache, robj *key, sds **members, unsigned long *members_size);
+int RcSRem(redisCache cache, robj *key, robj *members[], unsigned long members_size);
+int RcSRandmember(redisCache cache, robj *key, long l, sds **members, unsigned long *members_size);
 
 /*-----------------------------------------------------------------------------
  * Sorted set commands
  *----------------------------------------------------------------------------*/
-int RsZAdd(redisCache cache, robj *key, robj *items[], unsigned long items_size);
-int RsZCard(redisCache cache, robj *key, unsigned long *len);
-int RsZCount(redisCache cache, robj *key, robj *min, robj *max, unsigned long *len);
-int RsZIncrby(redisCache cache, robj *key, robj *items[], unsigned long items_size);
-int RsZrange(redisCache cache, robj *key, long start, long end, zitem **items, unsigned long *items_size);
-int RsZRangebyscore(redisCache cache, robj *key, robj *min, robj *max, zitem **items, unsigned long *items_size, long offset, long count);
-int RsZRank(redisCache cache, robj *key, robj *member, long *rank);
-int RsZRem(redisCache cache, robj *key, robj *members[], unsigned long members_size);
-int RsZRemrangebyrank(redisCache cache, robj *key, robj *min, robj *max);
-int RsZRemrangebyscore(redisCache cache, robj *key, robj *min, robj *max);
-int RsZRevrange(redisCache cache, robj *key, long start, long end, zitem **items, unsigned long *items_size);
-int RsZRevrangebyscore(redisCache cache, robj *key, robj *min, robj *max, zitem **items, unsigned long *items_size, long offset, long count);
-int RsZRevrangebylex(redisCache cache, robj *key, robj *min, robj *max, sds **members, unsigned long *members_size);
-int RsZRevrank(redisCache cache, robj *key, robj *member, long *rank);
-int RsZScore(redisCache cache, robj *key, robj *member, double *score);
-int RsZRangebylex(redisCache cache, robj *key, robj *min, robj *max, sds **members, unsigned long *members_size);
-int RsZLexcount(redisCache cache, robj *key, robj *min, robj *max, unsigned long *len);
-int RsZRemrangebylex(redisCache cache, robj *key, robj *min, robj *max);
+int RcZAdd(redisCache cache, robj *key, robj *items[], unsigned long items_size);
+int RcZCard(redisCache cache, robj *key, unsigned long *len);
+int RcZCount(redisCache cache, robj *key, robj *min, robj *max, unsigned long *len);
+int RcZIncrby(redisCache cache, robj *key, robj *items[], unsigned long items_size);
+int RcZrange(redisCache cache, robj *key, long start, long end, zitem **items, unsigned long *items_size);
+int RcZRangebyscore(redisCache cache, robj *key, robj *min, robj *max, zitem **items, unsigned long *items_size, long offset, long count);
+int RcZRank(redisCache cache, robj *key, robj *member, long *rank);
+int RcZRem(redisCache cache, robj *key, robj *members[], unsigned long members_size);
+int RcZRemrangebyrank(redisCache cache, robj *key, robj *min, robj *max);
+int RcZRemrangebyscore(redisCache cache, robj *key, robj *min, robj *max);
+int RcZRevrange(redisCache cache, robj *key, long start, long end, zitem **items, unsigned long *items_size);
+int RcZRevrangebyscore(redisCache cache, robj *key, robj *min, robj *max, zitem **items, unsigned long *items_size, long offset, long count);
+int RcZRevrangebylex(redisCache cache, robj *key, robj *min, robj *max, sds **members, unsigned long *members_size);
+int RcZRevrank(redisCache cache, robj *key, robj *member, long *rank);
+int RcZScore(redisCache cache, robj *key, robj *member, double *score);
+int RcZRangebylex(redisCache cache, robj *key, robj *min, robj *max, sds **members, unsigned long *members_size);
+int RcZLexcount(redisCache cache, robj *key, robj *min, robj *max, unsigned long *len);
+int RcZRemrangebylex(redisCache cache, robj *key, robj *min, robj *max);
 
 /*-----------------------------------------------------------------------------
  * Bit Commands
  *----------------------------------------------------------------------------*/
-int RsSetBit(redisCache cache, robj *key, size_t bitoffset, long on);
-int RsGetBit(redisCache cache, robj *key, size_t bitoffset, long *val);
-int RsBitCount(redisCache cache, robj *key, long start, long end, long *val, int have_offset);
-int RsBitPos(redisCache cache, robj *key, long bit, long start, long end, long *val, int offset_status);
+int RcSetBit(redisCache cache, robj *key, size_t bitoffset, long on);
+int RcGetBit(redisCache cache, robj *key, size_t bitoffset, long *val);
+int RcBitCount(redisCache cache, robj *key, long start, long end, long *val, int have_offset);
+int RcBitPos(redisCache cache, robj *key, long bit, long start, long end, long *val, int offset_status);
 
 #ifdef _cplusplus
 }
