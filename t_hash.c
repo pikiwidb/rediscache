@@ -610,7 +610,7 @@ static int genericHgetall(redisDb *redis_db, robj *kobj, hitem **items, unsigned
     return C_OK;
 }
 
-int RsHDel(redisCache db, robj *key, robj *fields[], unsigned long fields_size, unsigned long *ret)
+int RcHDel(redisCache db, robj *key, robj *fields[], unsigned long fields_size, unsigned long *ret)
 {
     if (NULL == db || NULL == key || NULL == fields) {
         return REDIS_INVALID_ARG;
@@ -637,7 +637,7 @@ int RsHDel(redisCache db, robj *key, robj *fields[], unsigned long fields_size, 
     return C_OK;
 }
 
-int RsHSet(redisCache db, robj *key, robj *field, robj *val)
+int RcHSet(redisCache db, robj *key, robj *field, robj *val)
 {
     if (NULL == db || NULL == key || NULL == field || NULL == val) {
         return REDIS_INVALID_ARG;
@@ -647,7 +647,7 @@ int RsHSet(redisCache db, robj *key, robj *field, robj *val)
     return HSet(redis_db, key, field, val);
 }
 
-int RsHSetnx(redisCache db, robj *key, robj *field, robj *val)
+int RcHSetnx(redisCache db, robj *key, robj *field, robj *val)
 {
     if (NULL == db || NULL == key || NULL == field || NULL == val) {
         return REDIS_INVALID_ARG;
@@ -657,7 +657,7 @@ int RsHSetnx(redisCache db, robj *key, robj *field, robj *val)
     return HSetnx(redis_db, key, field, val);
 }
 
-int RsHMSet(redisCache db, robj *key, robj *items[], unsigned long items_size)
+int RcHMSet(redisCache db, robj *key, robj *items[], unsigned long items_size)
 {
     if (NULL == db || NULL == key || NULL == items) {
         return REDIS_INVALID_ARG;
@@ -667,7 +667,7 @@ int RsHMSet(redisCache db, robj *key, robj *items[], unsigned long items_size)
     return HMSet(redis_db, key, items, items_size);
 }
 
-int RsHGet(redisCache db, robj *key, robj *field, sds *val)
+int RcHGet(redisCache db, robj *key, robj *field, sds *val)
 {
     if (NULL == db || NULL == key || NULL == field) {
         return REDIS_INVALID_ARG;
@@ -682,7 +682,7 @@ int RsHGet(redisCache db, robj *key, robj *field, sds *val)
     return GetHashFieldValue(o, field->ptr, val);
 }
 
-int RsHMGet(redisCache db, robj *key, hitem *items, unsigned long items_size)
+int RcHMGet(redisCache db, robj *key, hitem *items, unsigned long items_size)
 {
     if (NULL == db || NULL == key || NULL == items) {
         return REDIS_INVALID_ARG;
@@ -702,7 +702,7 @@ int RsHMGet(redisCache db, robj *key, hitem *items, unsigned long items_size)
     return C_OK;
 }
 
-int RsHGetAll(redisCache db, robj *key, hitem **items, unsigned long *items_size)
+int RcHGetAll(redisCache db, robj *key, hitem **items, unsigned long *items_size)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -712,7 +712,7 @@ int RsHGetAll(redisCache db, robj *key, hitem **items, unsigned long *items_size
     return genericHgetall(redis_db, key, items, items_size, OBJ_HASH_KEY|OBJ_HASH_VALUE);
 }
 
-int RsHKeys(redisCache db, robj *key, hitem **items, unsigned long *items_size)
+int RcHKeys(redisCache db, robj *key, hitem **items, unsigned long *items_size)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -722,7 +722,7 @@ int RsHKeys(redisCache db, robj *key, hitem **items, unsigned long *items_size)
     return genericHgetall(redis_db, key, items, items_size, OBJ_HASH_KEY);
 }
 
-int RsHVals(redisCache db, robj *key, hitem **items, unsigned long *items_size)
+int RcHVals(redisCache db, robj *key, hitem **items, unsigned long *items_size)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -732,7 +732,7 @@ int RsHVals(redisCache db, robj *key, hitem **items, unsigned long *items_size)
     return genericHgetall(redis_db, key, items, items_size, OBJ_HASH_VALUE);
 }
 
-int RsHExists(redisCache db, robj *key, robj *field, int *is_exist)
+int RcHExists(redisCache db, robj *key, robj *field, int *is_exist)
 {
     if (NULL == db || NULL == key || NULL == field) {
         return REDIS_INVALID_ARG;
@@ -749,7 +749,7 @@ int RsHExists(redisCache db, robj *key, robj *field, int *is_exist)
     return C_OK;
 }
 
-int RsHIncrby(redisCache db, robj *key, robj *field, long long val, long long *ret)
+int RcHIncrby(redisCache db, robj *key, robj *field, long long val, long long *ret)
 {
     if (NULL == db || NULL == key || NULL == field) {
         return REDIS_INVALID_ARG;
@@ -790,7 +790,7 @@ int RsHIncrby(redisCache db, robj *key, robj *field, long long val, long long *r
     return C_OK;
 }
 
-int RsHIncrbyfloat(redisCache db, robj *key, robj *field, long double val, long double *ret)
+int RcHIncrbyfloat(redisCache db, robj *key, robj *field, long double val, long double *ret)
 {
     if (NULL == db || NULL == key || NULL == field) {
         return REDIS_INVALID_ARG;
@@ -827,10 +827,10 @@ int RsHIncrbyfloat(redisCache db, robj *key, robj *field, long double val, long 
     new = sdsnewlen(buf,len);
     hashTypeSet(o,field->ptr,new,HASH_SET_TAKE_VALUE);
 
-    return C_OK;  
+    return C_OK;
 }
 
-int RsHlen(redisCache db, robj *key, unsigned long *len)
+int RcHlen(redisCache db, robj *key, unsigned long *len)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -843,11 +843,11 @@ int RsHlen(redisCache db, robj *key, unsigned long *len)
     }
 
     *len = hashTypeLength(o);
-    
+
     return C_OK;
 }
 
-int RsHStrlen(redisCache db, robj *key, robj *field, unsigned long *len)
+int RcHStrlen(redisCache db, robj *key, robj *field, unsigned long *len)
 {
     if (NULL == db || NULL == key || NULL == field) {
         return REDIS_INVALID_ARG;

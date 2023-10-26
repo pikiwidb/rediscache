@@ -212,7 +212,7 @@ static int popGenericCommand(redisDb *redis_db, robj *kobj, sds *element, int wh
     }
 }
 
-int RsLIndex(redisCache db, robj *key, long index, sds *element)
+int RcLIndex(redisCache db, robj *key, long index, sds *element)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -242,7 +242,7 @@ int RsLIndex(redisCache db, robj *key, long index, sds *element)
     return C_OK;
 }
 
-int RsLInsert(redisCache db, robj *key, int where, robj *pivot, robj *val)
+int RcLInsert(redisCache db, robj *key, int where, robj *pivot, robj *val)
 {
     if (NULL == db || NULL == key || NULL == pivot || NULL == val) {
         return REDIS_INVALID_ARG;
@@ -268,7 +268,7 @@ int RsLInsert(redisCache db, robj *key, int where, robj *pivot, robj *val)
     return C_OK;
 }
 
-int RsLLen(redisCache db, robj *key, unsigned long *len)
+int RcLLen(redisCache db, robj *key, unsigned long *len)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -285,7 +285,7 @@ int RsLLen(redisCache db, robj *key, unsigned long *len)
     return C_OK;
 }
 
-int RsLPop(redisCache db, robj *key, sds *element)
+int RcLPop(redisCache db, robj *key, sds *element)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -295,7 +295,7 @@ int RsLPop(redisCache db, robj *key, sds *element)
     return popGenericCommand(redis_db, key, element, REDIS_LIST_HEAD);
 }
 
-int RsLPush(redisCache db, robj *key, robj *vals[], unsigned long vals_size)
+int RcLPush(redisCache db, robj *key, robj *vals[], unsigned long vals_size)
 {
     if (NULL == db || NULL == key || NULL == vals) {
         return REDIS_INVALID_ARG;
@@ -305,7 +305,7 @@ int RsLPush(redisCache db, robj *key, robj *vals[], unsigned long vals_size)
     return pushGenericCommand(redis_db, key, vals, vals_size, REDIS_LIST_HEAD);
 }
 
-int RsLPushx(redisCache db, robj *key, robj *vals[], unsigned long vals_size)
+int RcLPushx(redisCache db, robj *key, robj *vals[], unsigned long vals_size)
 {
     if (NULL == db || NULL == key || NULL == vals) {
         return REDIS_INVALID_ARG;
@@ -315,7 +315,7 @@ int RsLPushx(redisCache db, robj *key, robj *vals[], unsigned long vals_size)
     return pushxGenericCommand(redis_db, key, vals, vals_size, REDIS_LIST_HEAD);
 }
 
-int RsLRange(redisCache db, robj *key, long start, long end, sds **vals, unsigned long *vals_size)
+int RcLRange(redisCache db, robj *key, long start, long end, sds **vals, unsigned long *vals_size)
 {
     if (NULL == db || NULL == key || NULL == vals) {
         return REDIS_INVALID_ARG;
@@ -371,7 +371,7 @@ int RsLRange(redisCache db, robj *key, long start, long end, sds **vals, unsigne
     return C_OK;
 }
 
-int RsLRem(redisCache db, robj *key, long count, robj *val)
+int RcLRem(redisCache db, robj *key, long count, robj *val)
 {
     if (NULL == db || NULL == key || NULL == val) {
         return REDIS_INVALID_ARG;
@@ -409,7 +409,7 @@ int RsLRem(redisCache db, robj *key, long count, robj *val)
     return C_OK;
 }
 
-int RsLSet(redisCache db, robj *key, long index, robj *val)
+int RcLSet(redisCache db, robj *key, long index, robj *val)
 {
     if (NULL == db || NULL == key || NULL == val) {
         return REDIS_INVALID_ARG;
@@ -435,7 +435,7 @@ int RsLSet(redisCache db, robj *key, long index, robj *val)
     return C_OK;
 }
 
-int RsLTrim(redisCache db, robj *key, long start, long end)
+int RcLTrim(redisCache db, robj *key, long start, long end)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -481,7 +481,7 @@ int RsLTrim(redisCache db, robj *key, long start, long end)
     return C_OK;
 }
 
-int RsRPop(redisCache db, robj *key, sds *element)
+int RcRPop(redisCache db, robj *key, sds *element)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -491,7 +491,7 @@ int RsRPop(redisCache db, robj *key, sds *element)
     return popGenericCommand(redis_db, key, element, REDIS_LIST_TAIL);
 }
 
-int RsRPush(redisCache db, robj *key, robj *vals[], unsigned long vals_size)
+int RcRPush(redisCache db, robj *key, robj *vals[], unsigned long vals_size)
 {
     if (NULL == db || NULL == key || NULL == vals) {
         return REDIS_INVALID_ARG;
@@ -501,7 +501,7 @@ int RsRPush(redisCache db, robj *key, robj *vals[], unsigned long vals_size)
     return pushGenericCommand(redis_db, key, vals, vals_size, REDIS_LIST_TAIL);
 }
 
-int RsRPushx(redisCache db, robj *key, robj *vals[], unsigned long vals_size)
+int RcRPushx(redisCache db, robj *key, robj *vals[], unsigned long vals_size)
 {
     if (NULL == db || NULL == key || NULL == vals) {
         return REDIS_INVALID_ARG;

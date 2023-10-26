@@ -215,7 +215,7 @@ unsigned char *getObjectReadOnlyString(robj *o, long *len, char *llbuf) {
     return p;
 }
 
-int RsSetBit(redisCache db, robj *key, size_t bitoffset, long on)
+int RcSetBit(redisCache db, robj *key, size_t bitoffset, long on)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -248,7 +248,7 @@ int RsSetBit(redisCache db, robj *key, size_t bitoffset, long on)
     return C_OK;
 }
 
-int RsGetBit(redisCache db, robj *key, size_t bitoffset, long *val)
+int RcGetBit(redisCache db, robj *key, size_t bitoffset, long *val)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -279,7 +279,7 @@ int RsGetBit(redisCache db, robj *key, size_t bitoffset, long *val)
     return C_OK;
 }
 
-int RsBitCount(redisCache db, robj *key, long start, long end, long *val, int have_offset)
+int RcBitCount(redisCache db, robj *key, long start, long end, long *val, int have_offset)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -323,7 +323,7 @@ int RsBitCount(redisCache db, robj *key, long start, long end, long *val, int ha
     return C_OK;
 }
 
-int RsBitPos(redisCache db, robj *key, long bit, long start, long end, long *val, int offset_status)
+int RcBitPos(redisCache db, robj *key, long bit, long start, long end, long *val, int offset_status)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;

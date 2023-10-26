@@ -250,7 +250,7 @@ static void SMembers(robj *subject,
     setTypeReleaseIterator(si);
 }
 
-int RsSAdd(redisCache db, robj *key, robj *members[], unsigned long members_size)
+int RcSAdd(redisCache db, robj *key, robj *members[], unsigned long members_size)
 {
     if (NULL == db || NULL == key || NULL == members) {
         return REDIS_INVALID_ARG;
@@ -275,7 +275,7 @@ int RsSAdd(redisCache db, robj *key, robj *members[], unsigned long members_size
     return C_OK;
 }
 
-int RsSCard(redisCache db, robj *key, unsigned long *len)
+int RcSCard(redisCache db, robj *key, unsigned long *len)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -292,7 +292,7 @@ int RsSCard(redisCache db, robj *key, unsigned long *len)
     return C_OK;
 }
 
-int RsSIsmember(redisCache db, robj *key, robj *member, int *is_member)
+int RcSIsmember(redisCache db, robj *key, robj *member, int *is_member)
 {
     if (NULL == db || NULL == key || NULL == member) {
         return REDIS_INVALID_ARG;
@@ -309,7 +309,7 @@ int RsSIsmember(redisCache db, robj *key, robj *member, int *is_member)
     return C_OK;
 }
 
-int RsSMembers(redisCache db, robj *key, sds **members, unsigned long *members_size)
+int RcSMembers(redisCache db, robj *key, sds **members, unsigned long *members_size)
 {
     if (NULL == db || NULL == key || NULL == members) {
         return REDIS_INVALID_ARG;
@@ -326,7 +326,7 @@ int RsSMembers(redisCache db, robj *key, sds **members, unsigned long *members_s
     return C_OK;
 }
 
-int RsSRem(redisCache db, robj *key, robj *members[], unsigned long members_size)
+int RcSRem(redisCache db, robj *key, robj *members[], unsigned long members_size)
 {
     if (NULL == db || NULL == key || NULL == members) {
         return REDIS_INVALID_ARG;
@@ -351,7 +351,7 @@ int RsSRem(redisCache db, robj *key, robj *members[], unsigned long members_size
     return C_ERR;
 }
 
-int RsSRandmember(redisCache db, robj *key, long l, sds **members, unsigned long *members_size)
+int RcSRandmember(redisCache db, robj *key, long l, sds **members, unsigned long *members_size)
 {
     if (NULL == db || NULL == key || NULL == members) {
         return REDIS_INVALID_ARG;

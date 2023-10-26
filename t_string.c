@@ -250,7 +250,7 @@ static int setrangeCommand(redisCache *redis_cache, robj *kobj, long offset, rob
     return C_OK;
 }
 
-int RsSet(redisCache cache, robj *key, robj *val, robj *expire)
+int RcSet(redisCache cache, robj *key, robj *val, robj *expire)
 {
     if (NULL == cache || NULL == key || NULL == val) {
         return REDIS_INVALID_ARG;
@@ -260,7 +260,7 @@ int RsSet(redisCache cache, robj *key, robj *val, robj *expire)
     return setGenericCommand(redis_cache, key, val, expire, UNIT_SECONDS, OBJ_SET_NO_FLAGS);
 }
 
-int RsSetnx(redisCache cache, robj *key, robj *val, robj *expire)
+int RcSetnx(redisCache cache, robj *key, robj *val, robj *expire)
 {
     if (NULL == cache || NULL == key || NULL == val) {
         return REDIS_INVALID_ARG;
@@ -270,7 +270,7 @@ int RsSetnx(redisCache cache, robj *key, robj *val, robj *expire)
     return setGenericCommand(redis_cache, key, val, expire, UNIT_SECONDS, OBJ_SET_NX);;
 }
 
-int RsSetxx(redisCache cache, robj *key, robj *val, robj *expire)
+int RcSetxx(redisCache cache, robj *key, robj *val, robj *expire)
 {
     if (NULL == cache || NULL == key || NULL == val) {
         return REDIS_INVALID_ARG;
@@ -280,7 +280,7 @@ int RsSetxx(redisCache cache, robj *key, robj *val, robj *expire)
     return setGenericCommand(redis_cache, key, val, expire, UNIT_SECONDS, OBJ_SET_XX);;
 }
 
-int RsGet(redisCache cache, robj *key, robj **val)
+int RcGet(redisCache cache, robj *key, robj **val)
 {
     if (NULL == cache || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -296,7 +296,7 @@ int RsGet(redisCache cache, robj *key, robj **val)
     return C_OK;
 }
 
-int RsIncr(redisCache cache, robj *key, long long *ret)
+int RcIncr(redisCache cache, robj *key, long long *ret)
 {
     if (NULL == cache || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -306,7 +306,7 @@ int RsIncr(redisCache cache, robj *key, long long *ret)
     return incrDecrCommand(redis_cache, key, 1, ret);
 }
 
-int RsDecr(redisCache cache, robj *key, long long *ret)
+int RcDecr(redisCache cache, robj *key, long long *ret)
 {
     if (NULL == cache || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -316,7 +316,7 @@ int RsDecr(redisCache cache, robj *key, long long *ret)
     return incrDecrCommand(redis_cache, key, -1, ret);
 }
 
-int RsIncrBy(redisCache cache, robj *key, long long incr, long long *ret)
+int RcIncrBy(redisCache cache, robj *key, long long incr, long long *ret)
 {
     if (NULL == cache || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -326,7 +326,7 @@ int RsIncrBy(redisCache cache, robj *key, long long incr, long long *ret)
     return incrDecrCommand(redis_cache, key, incr, ret);
 }
 
-int RsDecrBy(redisCache cache, robj *key, long long incr, long long *ret)
+int RcDecrBy(redisCache cache, robj *key, long long incr, long long *ret)
 {
     if (NULL == cache || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -336,7 +336,7 @@ int RsDecrBy(redisCache cache, robj *key, long long incr, long long *ret)
     return incrDecrCommand(redis_cache, key, incr * (-1), ret);
 }
 
-int RsIncrByFloat(redisCache cache, robj *key, long double incr, long double *ret)
+int RcIncrByFloat(redisCache cache, robj *key, long double incr, long double *ret)
 {
     if (NULL == cache || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -346,7 +346,7 @@ int RsIncrByFloat(redisCache cache, robj *key, long double incr, long double *re
     return incrbyfloatCommand(redis_cache, key, incr, ret);
 }
 
-int RsAppend(redisCache cache, robj *key, robj *val, unsigned long *ret)
+int RcAppend(redisCache cache, robj *key, robj *val, unsigned long *ret)
 {
     if (NULL == cache || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -356,7 +356,7 @@ int RsAppend(redisCache cache, robj *key, robj *val, unsigned long *ret)
     return appendCommand(redis_cache, key, val, ret);
 }
 
-int RsGetRange(redisCache cache, robj *key, long start, long end, sds *val)
+int RcGetRange(redisCache cache, robj *key, long start, long end, sds *val)
 {
     if (NULL == cache || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -366,7 +366,7 @@ int RsGetRange(redisCache cache, robj *key, long start, long end, sds *val)
     return getrangeCommand(redis_cache, key, start, end, val);
 }
 
-int RsSetRange(redisCache cache, robj *key, long start, robj *val, unsigned long *ret)
+int RcSetRange(redisCache cache, robj *key, long start, robj *val, unsigned long *ret)
 {
     if (NULL == cache || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -376,7 +376,7 @@ int RsSetRange(redisCache cache, robj *key, long start, robj *val, unsigned long
     return setrangeCommand(redis_cache, key, start, val, ret);
 }
 
-int RsStrlen(redisCache cache, robj *key, int *val_len)
+int RcStrlen(redisCache cache, robj *key, int *val_len)
 {
     if (NULL == cache || NULL == key) {
         return REDIS_INVALID_ARG;

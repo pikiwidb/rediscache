@@ -643,7 +643,7 @@ static int zrankGenericCommand(redisDb *redis_db, robj *kobj, robj *mobj, long *
     return (*rank >= 0) ? C_OK : REDIS_ITEM_NOT_EXIST;
 }
 
-int RsZAdd(redisCache db, robj *key, robj *items[], unsigned long items_size)
+int RcZAdd(redisCache db, robj *key, robj *items[], unsigned long items_size)
 {
     if (NULL == db || NULL == key || NULL == items) {
         return REDIS_INVALID_ARG;
@@ -653,7 +653,7 @@ int RsZAdd(redisCache db, robj *key, robj *items[], unsigned long items_size)
     return zaddGenericCommand(redis_db, key, items, items_size, ZADD_NONE);
 }
 
-int RsZCard(redisCache db, robj *key, unsigned long *len)
+int RcZCard(redisCache db, robj *key, unsigned long *len)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -670,7 +670,7 @@ int RsZCard(redisCache db, robj *key, unsigned long *len)
     return C_OK;
 }
 
-int RsZCount(redisCache db, robj *key, robj *min, robj *max, unsigned long *len)
+int RcZCount(redisCache db, robj *key, robj *min, robj *max, unsigned long *len)
 {
     if (NULL == db || NULL == key || NULL == min || NULL == max) {
         return REDIS_INVALID_ARG;
@@ -752,7 +752,7 @@ int RsZCount(redisCache db, robj *key, robj *min, robj *max, unsigned long *len)
     return C_OK;
 }
 
-int RsZIncrby(redisCache db, robj *key, robj *items[], unsigned long items_size)
+int RcZIncrby(redisCache db, robj *key, robj *items[], unsigned long items_size)
 {
     if (NULL == db || NULL == key || NULL == items) {
         return REDIS_INVALID_ARG;
@@ -762,7 +762,7 @@ int RsZIncrby(redisCache db, robj *key, robj *items[], unsigned long items_size)
     return zaddGenericCommand(redis_db, key, items, items_size, ZADD_INCR);
 }
 
-int RsZrange(redisCache db, robj *key, long start, long end, zitem **items, unsigned long *items_size)
+int RcZrange(redisCache db, robj *key, long start, long end, zitem **items, unsigned long *items_size)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -772,7 +772,7 @@ int RsZrange(redisCache db, robj *key, long start, long end, zitem **items, unsi
     return zrangeGenericCommand(redis_db, key, start, end, items, items_size, 0);
 }
 
-int RsZRangebyscore(redisCache db, robj *key,
+int RcZRangebyscore(redisCache db, robj *key,
                     robj *min, robj *max,
                     zitem **items, unsigned long *items_size,
                     long offset, long count)
@@ -785,7 +785,7 @@ int RsZRangebyscore(redisCache db, robj *key,
     return genericZrangebyscoreCommand(redis_db, key, min, max, items, items_size, 0, offset, count);
 }
 
-int RsZRank(redisCache db, robj *key, robj *member, long *rank)
+int RcZRank(redisCache db, robj *key, robj *member, long *rank)
 {
     if (NULL == db || NULL == key || NULL == member) {
         return REDIS_INVALID_ARG;
@@ -795,7 +795,7 @@ int RsZRank(redisCache db, robj *key, robj *member, long *rank)
     return zrankGenericCommand(redis_db, key, member, rank, 0);
 }
 
-int RsZRem(redisCache db, robj *key, robj *members[], unsigned long members_size)
+int RcZRem(redisCache db, robj *key, robj *members[], unsigned long members_size)
 {
     if (NULL == db || NULL == key || NULL == members) {
         return REDIS_INVALID_ARG;
@@ -819,7 +819,7 @@ int RsZRem(redisCache db, robj *key, robj *members[], unsigned long members_size
     return C_OK;
 }
 
-int RsZRemrangebyrank(redisCache db, robj *key, robj *min, robj *max)
+int RcZRemrangebyrank(redisCache db, robj *key, robj *min, robj *max)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -829,7 +829,7 @@ int RsZRemrangebyrank(redisCache db, robj *key, robj *min, robj *max)
     return zremrangeGenericCommand(redis_db, key, min, max, ZRANGE_RANK);
 }
 
-int RsZRemrangebyscore(redisCache db, robj *key, robj *min, robj *max)
+int RcZRemrangebyscore(redisCache db, robj *key, robj *min, robj *max)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
@@ -839,7 +839,7 @@ int RsZRemrangebyscore(redisCache db, robj *key, robj *min, robj *max)
     return zremrangeGenericCommand(redis_db, key, min, max, ZRANGE_SCORE);
 }
 
-int RsZRevrange(redisCache db, robj *key,
+int RcZRevrange(redisCache db, robj *key,
                 long start, long end,
                 zitem **items, unsigned long *items_size)
 {
@@ -851,7 +851,7 @@ int RsZRevrange(redisCache db, robj *key,
     return zrangeGenericCommand(redis_db, key, start, end, items, items_size, 1);
 }
 
-int RsZRevrangebyscore(redisCache db, robj *key,
+int RcZRevrangebyscore(redisCache db, robj *key,
                        robj *min, robj *max,
                        zitem **items, unsigned long *items_size,
                        long offset, long count)
@@ -864,7 +864,7 @@ int RsZRevrangebyscore(redisCache db, robj *key,
     return genericZrangebyscoreCommand(redis_db, key, min, max, items, items_size, 1, offset, count);
 }
 
-int RsZRevrangebylex(redisCache db, robj *key,
+int RcZRevrangebylex(redisCache db, robj *key,
                      robj *min, robj *max,
                      sds **members, unsigned long *members_size)
 {
@@ -876,7 +876,7 @@ int RsZRevrangebylex(redisCache db, robj *key,
     return genericZrangebylexCommand(redis_db, key, min, max, members, members_size, 1);
 }
 
-int RsZRevrank(redisCache db, robj *key, robj *member, long *rank)
+int RcZRevrank(redisCache db, robj *key, robj *member, long *rank)
 {
     if (NULL == db || NULL == key || NULL == member) {
         return REDIS_INVALID_ARG;
@@ -886,7 +886,7 @@ int RsZRevrank(redisCache db, robj *key, robj *member, long *rank)
     return zrankGenericCommand(redis_db, key, member, rank, 1);
 }
 
-int RsZScore(redisCache db, robj *key, robj *member, double *score)
+int RcZScore(redisCache db, robj *key, robj *member, double *score)
 {
     if (NULL == db || NULL == key || NULL == member) {
         return REDIS_INVALID_ARG;
@@ -905,7 +905,7 @@ int RsZScore(redisCache db, robj *key, robj *member, double *score)
     return C_OK;
 }
 
-int RsZRangebylex(redisCache db, robj *key,
+int RcZRangebylex(redisCache db, robj *key,
                   robj *min, robj *max,
                   sds **members, unsigned long *members_size)
 {
@@ -917,7 +917,7 @@ int RsZRangebylex(redisCache db, robj *key,
     return genericZrangebylexCommand(redis_db, key, min, max, members, members_size, 0);
 }
 
-int RsZLexcount(redisCache db, robj *key, robj *min, robj *max, unsigned long *len)
+int RcZLexcount(redisCache db, robj *key, robj *min, robj *max, unsigned long *len)
 {
     if (NULL == db || NULL == key || NULL == min || NULL == max) {
         return REDIS_INVALID_ARG;
@@ -998,7 +998,7 @@ int RsZLexcount(redisCache db, robj *key, robj *min, robj *max, unsigned long *l
     return C_OK;
 }
 
-int RsZRemrangebylex(redisCache db, robj *key, robj *min, robj *max)
+int RcZRemrangebylex(redisCache db, robj *key, robj *min, robj *max)
 {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
