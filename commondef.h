@@ -83,8 +83,8 @@ typedef long long mstime_t; /* millisecond time type. */
 #define OBJ_HASH_MAX_ZIPLIST_ENTRIES 512
 #define OBJ_HASH_MAX_ZIPLIST_VALUE 64
 #define OBJ_SET_MAX_INTSET_ENTRIES 512
-#define OBJ_ZSET_MAX_ZIPLIST_ENTRIES 0
-#define OBJ_ZSET_MAX_ZIPLIST_VALUE 0
+#define OBJ_ZSET_MAX_ZIPLIST_ENTRIES 2
+#define OBJ_ZSET_MAX_ZIPLIST_VALUE 2
 
 /* Hash structure related defaults */
 #define OBJ_HASH_KEY 1
