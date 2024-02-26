@@ -25,14 +25,15 @@ typedef uint8_t CuckooBucket[1];
 typedef uint8_t MyCuckooBucket;
 
 
-
-typedef struct {
+typedef struct
+{
     uint64_t numBuckets : 56;
     uint64_t bucketSize : 8;
-    MyCuckooBucket *data;
+    MyCuckooBucket* data;
 } SubCF;
 
-typedef struct {
+typedef struct
+{
     uint64_t numBuckets;
     uint64_t numItems;
     uint64_t numDeletes;
@@ -40,7 +41,7 @@ typedef struct {
     uint16_t bucketSize;
     uint16_t maxIterations;
     uint16_t expansion;
-    SubCF *filters;
+    SubCF* filters;
 } CuckooFilter;
 
 #define CUCKOO_GEN_HASH(s, n) MurmurHash64A_Bloom(s, n, 0)
@@ -51,13 +52,15 @@ typedef struct {
                 MurmurHash64A_Bloom(s, n, 0) :      \
                 murmurhash2(s, n, 0)
 */
-typedef struct {
+typedef struct
+{
     uint64_t i1;
     uint64_t i2;
     CuckooFingerprint fp;
 } CuckooKey;
 
-typedef enum {
+typedef enum
+{
     CuckooInsert_Inserted = 1,
     CuckooInsert_Exists = 0,
     CuckooInsert_NoSpace = -1,
@@ -65,11 +68,11 @@ typedef enum {
 } CuckooInsertStatus;
 
 
-CuckooInsertStatus CuckooFilter_InsertUnique(CuckooFilter *filter, CuckooHash hash);
-CuckooInsertStatus CuckooFilter_Insert(CuckooFilter *filter, CuckooHash hash);
-int CuckooFilter_Delete(CuckooFilter *filter, CuckooHash hash);
-int CuckooFilter_Check(const CuckooFilter *filter, CuckooHash hash);
-uint64_t CuckooFilter_Count(const CuckooFilter *filter, CuckooHash hash);
-void CuckooFilter_Compact(CuckooFilter *filter, bool cont);
-void CuckooFilter_GetInfo(const CuckooFilter *cf, CuckooHash hash, CuckooKey *out);
-int CuckooFilter_ValidateIntegrity(const CuckooFilter *cf);
+CuckooInsertStatus CuckooFilter_InsertUnique(CuckooFilter* filter, CuckooHash hash);
+CuckooInsertStatus CuckooFilter_Insert(CuckooFilter* filter, CuckooHash hash);
+int CuckooFilter_Delete(CuckooFilter* filter, CuckooHash hash);
+int CuckooFilter_Check(const CuckooFilter* filter, CuckooHash hash);
+uint64_t CuckooFilter_Count(const CuckooFilter* filter, CuckooHash hash);
+void CuckooFilter_Compact(CuckooFilter* filter, bool cont);
+void CuckooFilter_GetInfo(const CuckooFilter* cf, CuckooHash hash, CuckooKey* out);
+int CuckooFilter_ValidateIntegrity(const CuckooFilter* cf);

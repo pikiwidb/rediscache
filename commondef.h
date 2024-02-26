@@ -145,10 +145,10 @@ typedef struct _db_status {
 // change Parameter Meaning Complete reference:https://redis.io/docs/data-types/probabilistic/cuckoo-filter/#choosing-the-maximum-number-of-iterations-maxiterations
 
 typedef struct _filter_config {
-    long long capacity;       /* the number of elements you expect to have in filter */
+    long long capacity;                   /* the number of elements you expect to have in filter */
     long long bucket_size ;               /* Choosing the bucket size , bigger size bigger error rate , 2 */
-    long long  max_iterations;              /* Choosing the maximum number of iterations , 20 */
-    long long expansion;                 /* LFU counter decay factor. */
+    long long max_iterations;            /* Choosing the maximum number of iterations , 20 */
+    long long expansion;                  /* LFU counter decay factor. */
 } filter_config;
 
 
