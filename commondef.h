@@ -141,4 +141,19 @@ typedef struct _db_status {
     size_t stat_peak_memory;            /* Max used memory record */
 } db_status;
 
+/* cuckoo filter */
+// #define CUCKOO_MALLOC zmalloc
+// #define CUCKOO_CALLOC zcallocate  //todo ; zcallocate为和无法使用
+// #define CUCKOO_REALLOC zrealloc
+// #define CUCKOO_FREE zfree
+
+#define CF_DEFAULT_MAX_ITERATIONS 20
+#define CF_DEFAULT_BUCKETSIZE 2
+#define CF_DEFAULT_EXPANSION 1
+#define CF_MAX_EXPANSION 32768
+#define CF_MAX_ITERATIONS 65535
+#define CF_MAX_BUCKET_SIZE 255                     // 8 bits, see struct SubCF
+#define CF_MAX_NUM_BUCKETS (0x00FFFFFFFFFFFFFFULL) // 56 bits, see struct SubCF
+#define CF_MAX_NUM_FILTERS (UINT16_MAX)            // 16 bits, see struct CuckooFilter
+
 #endif
