@@ -8,6 +8,7 @@ extern "C" {
 #endif
 
 #include "commondef.h"
+#include "filter_cuckoo.h"
 #include "object.h"
 #include "zmalloc.h"
 
@@ -145,8 +146,28 @@ int RcGetBit(redisCache cache, robj *key, size_t bitoffset, long *val);
 int RcBitCount(redisCache cache, robj *key, long start, long end, long *val, int have_offset);
 int RcBitPos(redisCache cache, robj *key, long bit, long start, long end, long *val, int offset_status);
 
+ /*-----------------------------------------------------------------------------
+  * Filter Commands
+  *----------------------------------------------------------------------------*/
+CuckooFilter* CreateCuckooFilterHandle(filter_config* filter_config);
+void DestroyCuckooFilterHandle(CuckooFilter* filter);
+CuckooInsertStatus CuckooFilterInsertUnique(CuckooFilter* filter, CuckooHash hash);
+CuckooInsertStatus CuckooFilterInsert(CuckooFilter* filter, CuckooHash hash);
+int CuckooFilterDelete(CuckooFilter* filter, CuckooHash hash);
+int CuckooFilterCheck(const CuckooFilter* filter, CuckooHash hash);
+uint64_t CuckooFilterCount(const CuckooFilter* filter, CuckooHash);
+void CuckooFilterCompact(CuckooFilter* filter, bool cont);
+void CuckooFilterGetInfo(const CuckooFilter* cf, CuckooHash hash, CuckooKey* out);
+/**
+ * \brief  check whether the setting parameters meet requirements
+ * \param cf a pointor point to CuckooFilter
+ * \return 0 on success
+ */
+int CuckooFilterValidateIntegrity(const CuckooFilter *cf);
+
 #ifdef _cplusplus
 }
 #endif
 
 #endif
+
