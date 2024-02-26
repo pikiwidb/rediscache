@@ -16,10 +16,10 @@
 
 
 #ifndef CUCKOO_MALLOC
-#define CUCKOO_MALLOC malloc
-#define CUCKOO_CALLOC calloc
-#define CUCKOO_REALLOC realloc
-#define CUCKOO_FREE free
+#define CUCKOO_MALLOC zmalloc
+#define CUCKOO_CALLOC zcallocate
+#define CUCKOO_REALLOC zrealloc
+#define CUCKOO_FREE zfree
 #endif
 
 // int globalCuckooHash64Bit;
@@ -77,7 +77,7 @@ static int CuckooFilter_Grow(CuckooFilter *filter) {
     currentFilter->bucketSize = filter->bucketSize;
     currentFilter->numBuckets = filter->numBuckets * growth;
     currentFilter->data =
-        CUCKOO_CALLOC((size_t)currentFilter->numBuckets * filter->bucketSize, sizeof(CuckooBucket));
+        CUCKOO_CALLOC((size_t)currentFilter->numBuckets * filter->bucketSize * sizeof(CuckooBucket));
     if (!currentFilter->data) {
         return -1; // LCOV_EXCL_LINE memory failure
     }
