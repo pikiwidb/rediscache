@@ -257,3 +257,4 @@ int RcRandomkey(redisCache cache, sds *key)
     decrRefCount(kobj);
     return C_OK;
 }
+

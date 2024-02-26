@@ -64,14 +64,12 @@ typedef enum {
     CuckooInsert_MemAllocFailed = -2
 } CuckooInsertStatus;
 
-int CuckooFilter_Init(CuckooFilter *filter, uint64_t capacity, uint16_t bucketSize,
-                      uint16_t maxIterations, uint16_t expansion);
-void CuckooFilter_Free(CuckooFilter *filter);
+
 CuckooInsertStatus CuckooFilter_InsertUnique(CuckooFilter *filter, CuckooHash hash);
 CuckooInsertStatus CuckooFilter_Insert(CuckooFilter *filter, CuckooHash hash);
 int CuckooFilter_Delete(CuckooFilter *filter, CuckooHash hash);
 int CuckooFilter_Check(const CuckooFilter *filter, CuckooHash hash);
-uint64_t CuckooFilter_Count(const CuckooFilter *filter, CuckooHash);
+uint64_t CuckooFilter_Count(const CuckooFilter *filter, CuckooHash hash);
 void CuckooFilter_Compact(CuckooFilter *filter, bool cont);
 void CuckooFilter_GetInfo(const CuckooFilter *cf, CuckooHash hash, CuckooKey *out);
 int CuckooFilter_ValidateIntegrity(const CuckooFilter *cf);

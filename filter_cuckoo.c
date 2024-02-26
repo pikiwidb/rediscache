@@ -412,3 +412,89 @@ int CuckooFilter_ValidateIntegrity(const CuckooFilter *cf) {
 
     return 0;
 }
+
+
+CuckooFilter *CreateCuckooFilterHandle(filter_config *filter_config){
+    long long capacity = filter_config->capacity;
+
+    long long maxIterations = filter_config->max_iterations;
+    if (maxIterations <= 0 || maxIterations > CF_MAX_ITERATIONS)
+    {
+        return NULL;
+    }
+
+
+    long long bucketSize = filter_config->bucket_size;
+    if (bucketSize <= 0 || bucketSize > CF_MAX_BUCKET_SIZE)
+    {
+        return NULL;
+    }
+
+    long long expansion = filter_config->expansion;
+
+    if(expansion < 0 || expansion > CF_MAX_EXPANSION)
+    {
+        return NULL;
+    }
+
+
+    if (bucketSize * 2 > capacity) {
+        return NULL; //"Capacity must be at least (BucketSize * 2)"
+    }
+
+    CuckooFilter *cf = CUCKOO_CALLOC(sizeof(*cf));
+    if(cf==NULL)
+    {
+        return NULL;
+    }
+    if (CuckooFilter_Init(cf, capacity, bucketSize, maxIterations, expansion) != 0) {
+        CuckooFilter_Free(cf); // LCOV_EXCL_LINE
+        cf = NULL;            // LCOV_EXCL_LINE
+    }
+
+    return cf;
+}
+
+void DestroyCuckooFilterHandle(CuckooFilter *filter)
+{
+    if(filter)
+    {
+        CuckooFilter_Free(filter);
+
+    }
+}
+
+
+CuckooInsertStatus CuckooFilterInsertUnique(CuckooFilter* filter, CuckooHash hash)
+{
+    return CuckooFilter_InsertUnique(filter, hash);
+}
+CuckooInsertStatus CuckooFilterInsert(CuckooFilter* filter, CuckooHash hash)
+{
+        return CuckooFilter_Insert(filter, hash);
+}
+int CuckooFilterDelete(CuckooFilter* filter, CuckooHash hash)
+{
+        return CuckooFilter_Delete(filter, hash);
+}
+int CuckooFilterCheck(const CuckooFilter* filter, CuckooHash hash)
+{
+    return CuckooFilter_Check(filter, hash);
+}
+uint64_t CuckooFilterCount(const CuckooFilter* filter, CuckooHash hash)
+{
+    return CuckooFilter_Count(filter,hash);
+}
+void CuckooFilterCompact(CuckooFilter* filter, bool cont)
+{
+        CuckooFilter_Compact(filter, cont);
+}
+void CuckooFilterGetInfo(const CuckooFilter* cf, CuckooHash hash, CuckooKey* out)
+{
+        CuckooFilter_GetInfo(cf, hash, out);
+}
+
+int CuckooFilterValidateIntegrity(const CuckooFilter *cf)
+{
+        return CuckooFilter_ValidateIntegrity(cf);
+}

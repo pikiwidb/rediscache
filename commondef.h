@@ -143,9 +143,15 @@ typedef struct _db_status {
 
 /* cuckoo filter */
 // change Parameter Meaning Complete reference:https://redis.io/docs/data-types/probabilistic/cuckoo-filter/#choosing-the-maximum-number-of-iterations-maxiterations
-#define CF_DEFAULT_MAX_ITERATIONS 20 // Choosing the maximum number of iterations
-#define CF_DEFAULT_BUCKETSIZE 2 //Choosing the bucket size , bigger size bigger error rate
-#define CF_DEFAULT_EXPANSION 1 // Choosing the scaling factor
+
+typedef struct _filter_config {
+    long long capacity;       /* the number of elements you expect to have in filter */
+    long long bucket_size ;               /* Choosing the bucket size , bigger size bigger error rate , 2 */
+    long long  max_iterations;              /* Choosing the maximum number of iterations , 20 */
+    long long expansion;                 /* LFU counter decay factor. */
+} filter_config;
+
+
 #define CF_MAX_EXPANSION 32768
 #define CF_MAX_ITERATIONS 65535
 #define CF_MAX_BUCKET_SIZE 255                     // 8 bits, see struct SubCF
