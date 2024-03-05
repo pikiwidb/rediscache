@@ -209,7 +209,7 @@ long long redisBitpos(void *s, unsigned long count, int bit) {
 robj *lookupStringForBitCommand(redisDb *redis_db, robj *kobj, uint64_t maxbit, int *dirty) {
     size_t byte = maxbit >> 3;
     robj *o = lookupKeyWrite(redis_db, kobj);
-    if (checkType(c,o,OBJ_STRING)) return NULL;
+    if (checkType(o,OBJ_STRING)) return NULL;
     if (dirty) *dirty = 0;
 
     if (o == NULL) {
@@ -257,7 +257,7 @@ unsigned char *getObjectReadOnlyString(robj *o, long *len, char *llbuf) {
 }
 
 /* SETBIT key offset bitvalue */
-int RcSetBit(redisCache db, obj *key, size_t bitoffset, long on) {
+int RcSetBit(redisCache db, robj *key, size_t bitoffset, long on) {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
     }
@@ -395,9 +395,21 @@ int RcBitCount(redisCache db, robj *key, long start, long end, int isbit, long *
     return C_OK;
 }
 
-/* BITPOS key bit [start [end [BIT|BYTE]]] */
+
+/**
+ *  BITPOS key bit [start [end [BIT|BYTE]]]
+ * @param db
+ * @param key
+ * @param bit 0 or 1 . 0 : find first 0 ; 1:find first 1
+ * @param start start index , bytes ,from 0
+ * @param end  end index, bytes
+ * @param isbit if isbit is 1, get BIT, or get BYTE
+ * @param val return value
+ * @param offset_status dentifies the number of parameters passed to the command
+ * @return the position of the first bit set to 1 or 0 in a string，Note that bit positions are returned always as absolute values starting from bit zero even when start and end are used to specify a range.
+ */
 int RcBitPos(redisCache db, robj *key, long bit, long start, long end, int isbit, long *val, int offset_status) {
-    if (NULL == db || NULL == key || isbit > 1) {
+    if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
     }
 
@@ -411,11 +423,11 @@ int RcBitPos(redisCache db, robj *key, long bit, long start, long end, int isbit
     /* If the key does not exist, from our point of view it is an infinite
      * array of 0 bits. If the user is looking for the first clear bit return 0,
      * If the user is looking for the first set bit, return -1. */
-    if ((o = lookupKeyRead(redis_db, key)) == NULL || checkType(c,o,OBJ_STRING)) {
+    if ((o = lookupKeyRead(redis_db, key)) == NULL || checkType(o,OBJ_STRING)) {
         return REDIS_KEY_NOT_EXIST;
     }
 
-    long bit, strlen;
+    long strlen;
     unsigned char *p;
     char llbuf[LONG_STR_SIZE];
     int end_given = 0;
@@ -459,7 +471,7 @@ int RcBitPos(redisCache db, robj *key, long bit, long start, long end, int isbit
     /* For empty ranges (start > end) we return -1 as an empty range does
      * not contain a 0 nor a 1. */
     if (start > end) {
-        *val = -1
+        *val = -1;
     } else {
         long bytes = end-start+1;
         long long pos;
@@ -490,7 +502,6 @@ int RcBitPos(redisCache db, robj *key, long bit, long start, long end, int isbit
         if (bit) tmpchar = p[end] & ~last_byte_neg_mask;
         else tmpchar = p[end] | last_byte_neg_mask;
         pos = redisBitpos(&tmpchar,1,bit);
-        *val = pos;
 
     result:
         /* If we are looking for clear bits, and the user specified an exact
@@ -501,6 +512,7 @@ int RcBitPos(redisCache db, robj *key, long bit, long start, long end, int isbit
          * we return -1 to the caller, to mean, in the specified range there
          * is not a single "0" bit. */
         if (end_given && bit == 0 && pos == (long long)bytes<<3) {
+            *val = -1;
             return C_ERR;
         }
         if (pos != -1) pos += (long long)start<<3; /* Adjust for the bytes we skipped. */
