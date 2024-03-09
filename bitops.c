@@ -209,7 +209,7 @@ long long redisBitpos(void *s, unsigned long count, int bit) {
 robj *lookupStringForBitCommand(redisDb *redis_db, robj *kobj, uint64_t maxbit, int *dirty) {
     size_t byte = maxbit >> 3;
     robj *o = lookupKeyWrite(redis_db, kobj);
-    if (checkType(c,o,OBJ_STRING)) return NULL;
+    if (checkType(o,OBJ_STRING)) return NULL;
     if (dirty) *dirty = 0;
 
     if (o == NULL) {
@@ -257,7 +257,7 @@ unsigned char *getObjectReadOnlyString(robj *o, long *len, char *llbuf) {
 }
 
 /* SETBIT key offset bitvalue */
-int RcSetBit(redisCache db, obj *key, size_t bitoffset, long on) {
+int RcSetBit(redisCache db, robj *key, size_t bitoffset, long on) {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
     }
@@ -411,11 +411,11 @@ int RcBitPos(redisCache db, robj *key, long bit, long start, long end, int isbit
     /* If the key does not exist, from our point of view it is an infinite
      * array of 0 bits. If the user is looking for the first clear bit return 0,
      * If the user is looking for the first set bit, return -1. */
-    if ((o = lookupKeyRead(redis_db, key)) == NULL || checkType(c,o,OBJ_STRING)) {
+    if ((o = lookupKeyRead(redis_db, key)) == NULL || checkType(o,OBJ_STRING)) {
         return REDIS_KEY_NOT_EXIST;
     }
 
-    long bit, strlen;
+    long strlen;
     unsigned char *p;
     char llbuf[LONG_STR_SIZE];
     int end_given = 0;
@@ -459,7 +459,7 @@ int RcBitPos(redisCache db, robj *key, long bit, long start, long end, int isbit
     /* For empty ranges (start > end) we return -1 as an empty range does
      * not contain a 0 nor a 1. */
     if (start > end) {
-        *val = -1
+        *val = -1;
     } else {
         long bytes = end-start+1;
         long long pos;
