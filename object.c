@@ -29,28 +29,19 @@
  */
 
 
-#include "functions.h"
-#include "intset.h"  /* Compact integer set structure */
-#include <math.h>
-#include <ctype.h>
-#include <string.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <limits.h>
-#include <stdio.h>
-#include <assert.h>
 
+#include "intset.h"  /* Compact integer set structure */
+
+#include <string.h>
+#include <limits.h>
+#include <assert.h>
 #include "object.h"
 #include "commondef.h"
-#include "commonfunc.h"
 #include "zmalloc.h"
 #include "util.h"
 #include "dict.h"
-#include "adlist.h"
-#include "ziplist.h"
 #include "quicklist.h"
 #include "zset.h"
-#include "intset.h"
 #include "evict.h"
 #include "listpack.h"
 #include "stream.h"
