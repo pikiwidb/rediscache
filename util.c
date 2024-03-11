@@ -1019,68 +1019,68 @@ int dirExists(char *dname) {
     struct stat statbuf;
     return stat(dname, &statbuf) == 0 && S_ISDIR(statbuf.st_mode);
 }
-
-int dirCreateIfMissing(char *dname) {
-    if (mkdir(dname, 0755) != 0) {
-        if (errno != EEXIST) {
-            return -1;
-        } else if (!dirExists(dname)) {
-            errno = ENOTDIR;
-            return -1;
-        }
-    }
-    return 0;
-}
-
-int dirRemove(char *dname) {
-    DIR *dir;
-    struct stat stat_entry;
-    struct dirent *entry;
-    char full_path[PATH_MAX + 1];
-
-    if ((dir = opendir(dname)) == NULL) {
-        return -1;
-    }
-
-    while ((entry = readdir(dir)) != NULL) {
-        if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..")) continue;
-
-        snprintf(full_path, sizeof(full_path), "%s/%s", dname, entry->d_name);
-
-        int fd = open(full_path, O_RDONLY|O_NONBLOCK);
-        if (fd == -1) {
-            closedir(dir);
-            return -1;
-        }
-
-        if (fstat(fd, &stat_entry) == -1) {
-            close(fd);
-            closedir(dir);
-            return -1;
-        }
-        close(fd);
-
-        if (S_ISDIR(stat_entry.st_mode) != 0) {
-            if (dirRemove(full_path) == -1) {
-                return -1;
-            }
-            continue;
-        }
-
-        if (unlink(full_path) != 0) {
-            closedir(dir);
-            return -1;
-        }
-    }
-
-    if (rmdir(dname) != 0) {
-        closedir(dir);
-        return -1;
-    }
-
-    closedir(dir);
-    return 0;
-}
+//
+//int dirCreateIfMissing(char *dname) {
+//    if (mkdir(dname, 0755) != 0) {
+//        if (errno != EEXIST) {
+//            return -1;
+//        } else if (!dirExists(dname)) {
+//            errno = ENOTDIR;
+//            return -1;
+//        }
+//    }
+//    return 0;
+//}
+//
+//int dirRemove(char *dname) {
+//    DIR *dir;
+//    struct stat stat_entry;
+//    struct dirent *entry;
+//    char full_path[PATH_MAX + 1];
+//
+//    if ((dir = opendir(dname)) == NULL) {
+//        return -1;
+//    }
+//
+//    while ((entry = readdir(dir)) != NULL) {
+//        if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..")) continue;
+//
+//        snprintf(full_path, sizeof(full_path), "%s/%s", dname, entry->d_name);
+//
+//        int fd = open(full_path, O_RDONLY|O_NONBLOCK);
+//        if (fd == -1) {
+//            closedir(dir);
+//            return -1;
+//        }
+//
+//        if (fstat(fd, &stat_entry) == -1) {
+//            close(fd);
+//            closedir(dir);
+//            return -1;
+//        }
+//        close(fd);
+//
+//        if (S_ISDIR(stat_entry.st_mode) != 0) {
+//            if (dirRemove(full_path) == -1) {
+//                return -1;
+//            }
+//            continue;
+//        }
+//
+//        if (unlink(full_path) != 0) {
+//            closedir(dir);
+//            return -1;
+//        }
+//    }
+//
+//    if (rmdir(dname) != 0) {
+//        closedir(dir);
+//        return -1;
+//    }
+//
+//    closedir(dir);
+//    return 0;
+//}
 
 sds makePath(char *path, char *filename) {
     return sdscatfmt(sdsempty(), "%s/%s", path, filename);
@@ -1094,45 +1094,45 @@ sds makePath(char *path, char *filename) {
  * 3. fsync() the temp file
  * 4. rename the temp file to the appropriate name
  * 5. fsync() the containing directory */
-int fsyncFileDir(const char *filename) {
-#ifdef _AIX
-    /* AIX is unable to fsync a directory */
-    return 0;
-#endif
-    char temp_filename[PATH_MAX + 1];
-    char *dname;
-    int dir_fd;
-
-    if (strlen(filename) > PATH_MAX) {
-        errno = ENAMETOOLONG;
-        return -1;
-    }
-
-    /* In the glibc implementation dirname may modify their argument. */
-    memcpy(temp_filename, filename, strlen(filename) + 1);
-    dname = dirname(temp_filename);
-
-    dir_fd = open(dname, O_RDONLY);
-    if (dir_fd == -1) {
-        /* Some OSs don't allow us to open directories at all, just
-         * ignore the error in that case */
-        if (errno == EISDIR) {
-            return 0;
-        }
-        return -1;
-    }
-    /* Some OSs don't allow us to fsync directories at all, so we can ignore
-     * those errors. */
-    if (redis_fsync(dir_fd) == -1 && !(errno == EBADF || errno == EINVAL)) {
-        int save_errno = errno;
-        close(dir_fd);
-        errno = save_errno;
-        return -1;
-    }
-    
-    close(dir_fd);
-    return 0;
-}
+//int fsyncFileDir(const char *filename) {
+//#ifdef _AIX
+//    /* AIX is unable to fsync a directory */
+//    return 0;
+//#endif
+//    char temp_filename[PATH_MAX + 1];
+//    char *dname;
+//    int dir_fd;
+//
+//    if (strlen(filename) > PATH_MAX) {
+//        errno = ENAMETOOLONG;
+//        return -1;
+//    }
+//
+//    /* In the glibc implementation dirname may modify their argument. */
+//    memcpy(temp_filename, filename, strlen(filename) + 1);
+//    dname = dirname(temp_filename);
+//
+//    dir_fd = open(dname, O_RDONLY);
+//    if (dir_fd == -1) {
+//        /* Some OSs don't allow us to open directories at all, just
+//         * ignore the error in that case */
+//        if (errno == EISDIR) {
+//            return 0;
+//        }
+//        return -1;
+//    }
+//    /* Some OSs don't allow us to fsync directories at all, so we can ignore
+//     * those errors. */
+//    if (redis_fsync(dir_fd) == -1 && !(errno == EBADF || errno == EINVAL)) {
+//        int save_errno = errno;
+//        close(dir_fd);
+//        errno = save_errno;
+//        return -1;
+//    }
+//
+//    close(dir_fd);
+//    return 0;
+//}
 
  /* free OS pages backed by file */
 int reclaimFilePageCache(int fd, size_t offset, size_t length) {
