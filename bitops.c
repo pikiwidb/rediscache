@@ -395,9 +395,21 @@ int RcBitCount(redisCache db, robj *key, long start, long end, int isbit, long *
     return C_OK;
 }
 
-/* BITPOS key bit [start [end [BIT|BYTE]]] */
+
+/**
+ *  BITPOS key bit [start [end [BIT|BYTE]]]
+ * @param db
+ * @param key
+ * @param bit 0 or 1 . 0 : find first 0 ; 1:find first 1
+ * @param start start index , bytes ,from 0
+ * @param end  end index, bytes
+ * @param isbit if isbit is 1, get BIT, or get BYTE
+ * @param val return value
+ * @param offset_status dentifies the number of parameters passed to the command
+ * @return the position of the first bit set to 1 or 0 in a string，Note that bit positions are returned always as absolute values starting from bit zero even when start and end are used to specify a range.
+ */
 int RcBitPos(redisCache db, robj *key, long bit, long start, long end, int isbit, long *val, int offset_status) {
-    if (NULL == db || NULL == key || isbit > 1) {
+    if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
     }
 
@@ -490,7 +502,6 @@ int RcBitPos(redisCache db, robj *key, long bit, long start, long end, int isbit
         if (bit) tmpchar = p[end] & ~last_byte_neg_mask;
         else tmpchar = p[end] | last_byte_neg_mask;
         pos = redisBitpos(&tmpchar,1,bit);
-        *val = pos;
 
     result:
         /* If we are looking for clear bits, and the user specified an exact
@@ -501,6 +512,7 @@ int RcBitPos(redisCache db, robj *key, long bit, long start, long end, int isbit
          * we return -1 to the caller, to mean, in the specified range there
          * is not a single "0" bit. */
         if (end_given && bit == 0 && pos == (long long)bytes<<3) {
+            *val = -1;
             return C_ERR;
         }
         if (pos != -1) pos += (long long)start<<3; /* Adjust for the bytes we skipped. */
