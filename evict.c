@@ -172,7 +172,7 @@ void evictionPoolPopulate(dict *sampledict, dict *keydict, struct evictionPoolEn
          * just a score where an higher score means better candidate. */
         if (maxmemory_policy & MAXMEMORY_FLAG_LRU) {
             idle = estimateObjectIdleTime(o);
-        } else if (server.maxmemory_policy & MAXMEMORY_FLAG_LFU) {
+        } else if (maxmemory_policy & MAXMEMORY_FLAG_LFU) {
             /* When we use an LRU policy, we sort the keys by idle time
              * so that we expire keys starting from greater idle time.
              * However when the policy is an LFU one, we have a frequency
