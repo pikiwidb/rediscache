@@ -31,13 +31,14 @@
 #include <stdio.h>
 #include <string.h> /* for memcpy */
 #include <limits.h>
+#include <assert.h>
 #include "quicklist.h"
 #include "zmalloc.h"
 #include "config.h"
 #include "listpack.h"
 #include "util.h" /* for ll2string */
 #include "lzf.h"
-#include "redisassert.h"
+
 
 #ifndef REDIS_STATIC
 #define REDIS_STATIC static

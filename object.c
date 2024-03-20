@@ -44,7 +44,7 @@
 #include "zset.h"
 #include "evict.h"
 #include "listpack.h"
-#include "stream.h"
+
 
 #ifdef __CYGWIN__
 #define strtold(a,b) ((long double)strtod((a),(b)))
@@ -325,12 +325,12 @@ robj *createZsetListpackObject(void) {
     return o;
 }
 
-robj *createStreamObject(void) {
-    stream *s = streamNew();
-    robj *o = createObject(OBJ_STREAM, s);
-    o->encoding = OBJ_ENCODING_STREAM;
-    return o;
-}
+//robj *createStreamObject(void) {
+//    stream *s = streamNew();
+//    robj *o = createObject(OBJ_STREAM, s);
+//    o->encoding = OBJ_ENCODING_STREAM;
+//    return o;
+//}
 
 //robj *createModuleObject(moduleType *mt, void *value) {
 //    moduleValue *mv = zmalloc(sizeof(*mv));
@@ -408,9 +408,9 @@ void freeHashObject(robj *o) {
 //    zfree(mv);
 //}
 
-void freeStreamObject(robj *o) {
-    freeStream(o->ptr);
-}
+//void freeStreamObject(robj *o) {
+//    freeStream(o->ptr);
+//}
 
 void incrRefCount(robj *o) {
     if (o->refcount < OBJ_FIRST_SPECIAL_REFCOUNT) {
@@ -445,8 +445,8 @@ void decrRefCount(robj *o) {
 //            case OBJ_MODULE:
 //                freeModuleObject(o);
 //                break;
-            case OBJ_STREAM:
-                freeStreamObject(o);
+//            case OBJ_STREAM:
+//                freeStreamObject(o);
                 break;
             default:
 //                serverPanic("Unknown object type");
