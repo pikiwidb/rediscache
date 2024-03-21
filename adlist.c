@@ -34,8 +34,9 @@
 #include "zmalloc.h"
 
 /* Create a new list. The created list can be freed with
- * AlFreeList(), but private value of every node need to be freed
- * by the user before to call AlFreeList().
+ * listRelease(), but private value of every node need to be freed
+ * by the user before to call listRelease(), or by setting a free method using
+ * listSetFreeMethod.
  *
  * On error, NULL is returned. Otherwise the pointer to the new list. */
 list *listCreate(void)
@@ -92,6 +93,14 @@ list *listAddNodeHead(list *list, void *value)
     if ((node = zmalloc(sizeof(*node))) == NULL)
         return NULL;
     node->value = value;
+    listLinkNodeHead(list, node);
+    return list;
+}
+
+/*
+ * Add a node that has already been allocated to the head of list
+ */
+void listLinkNodeHead(list* list, listNode *node) {
     if (list->len == 0) {
         list->head = list->tail = node;
         node->prev = node->next = NULL;
@@ -102,7 +111,6 @@ list *listAddNodeHead(list *list, void *value)
         list->head = node;
     }
     list->len++;
-    return list;
 }
 
 /* Add a new node to the list, to tail, containing the specified 'value'
@@ -118,6 +126,14 @@ list *listAddNodeTail(list *list, void *value)
     if ((node = zmalloc(sizeof(*node))) == NULL)
         return NULL;
     node->value = value;
+    listLinkNodeTail(list, node);
+    return list;
+}
+
+/*
+ * Add a node that has already been allocated to the tail of list
+ */
+void listLinkNodeTail(list *list, listNode *node) {
     if (list->len == 0) {
         list->head = list->tail = node;
         node->prev = node->next = NULL;
@@ -128,7 +144,6 @@ list *listAddNodeTail(list *list, void *value)
         list->tail = node;
     }
     list->len++;
-    return list;
 }
 
 list *listInsertNode(list *list, listNode *old_node, void *value, int after) {
@@ -161,11 +176,20 @@ list *listInsertNode(list *list, listNode *old_node, void *value, int after) {
 }
 
 /* Remove the specified node from the specified list.
- * It's up to the caller to free the private value of the node.
+ * The node is freed. If free callback is provided the value is freed as well.
  *
  * This function can't fail. */
 void listDelNode(list *list, listNode *node)
 {
+    listUnlinkNode(list, node);
+    if (list->free) list->free(node->value);
+    zfree(node);
+}
+
+/*
+ * Remove the specified node from the list without freeing it.
+ */
+void listUnlinkNode(list *list, listNode *node) {
     if (node->prev)
         node->prev->next = node->next;
     else
@@ -174,8 +198,10 @@ void listDelNode(list *list, listNode *node)
         node->next->prev = node->prev;
     else
         list->tail = node->prev;
-    if (list->free) list->free(node->value);
-    zfree(node);
+
+    node->next = NULL;
+    node->prev = NULL;
+
     list->len--;
 }
 
@@ -217,8 +243,8 @@ void listRewindTail(list *list, listIter *li) {
  * listDelNode(), but not to remove other elements.
  *
  * The function returns a pointer to the next element of the list,
- * or NULL if there are no more elements, so the classical usage patter
- * is:
+ * or NULL if there are no more elements, so the classical usage
+ * pattern is:
  *
  * iter = listGetIterator(list,<direction>);
  * while ((node = listNext(iter)) != NULL) {
@@ -268,9 +294,14 @@ list *listDup(list *orig)
                 listRelease(copy);
                 return NULL;
             }
-        } else
+        } else {
             value = node->value;
+        }
+        
         if (listAddNodeTail(copy, value) == NULL) {
+            /* Free value if dup succeed but listAddNodeTail failed. */
+            if (copy->free) copy->free(value);
+
             listRelease(copy);
             return NULL;
         }
@@ -327,12 +358,11 @@ listNode *listIndex(list *list, long index) {
 }
 
 /* Rotate the list removing the tail node and inserting it to the head. */
-void listRotate(list *list) {
-    listNode *tail = list->tail;
-
+void listRotateTailToHead(list *list) {
     if (listLength(list) <= 1) return;
 
     /* Detach current tail */
+    listNode *tail = list->tail;
     list->tail = tail->prev;
     list->tail->next = NULL;
     /* Move it as head */
@@ -342,21 +372,46 @@ void listRotate(list *list) {
     list->head = tail;
 }
 
+/* Rotate the list removing the head node and inserting it to the tail. */
+void listRotateHeadToTail(list *list) {
+    if (listLength(list) <= 1) return;
+
+    listNode *head = list->head;
+    /* Detach current head */
+    list->head = head->next;
+    list->head->prev = NULL;
+    /* Move it as tail */
+    list->tail->next = head;
+    head->next = NULL;
+    head->prev = list->tail;
+    list->tail = head;
+}
+
 /* Add all the elements of the list 'o' at the end of the
  * list 'l'. The list 'other' remains empty but otherwise valid. */
 void listJoin(list *l, list *o) {
-    if (o->head)
-        o->head->prev = l->tail;
+    if (o->len == 0) return;
+
+    o->head->prev = l->tail;
 
     if (l->tail)
         l->tail->next = o->head;
     else
         l->head = o->head;
 
-    if (o->tail) l->tail = o->tail;
+    l->tail = o->tail;
     l->len += o->len;
 
     /* Setup other as an empty list. */
     o->head = o->tail = NULL;
     o->len = 0;
+}
+
+/* Initializes the node's value and sets its pointers
+ * so that it is initially not a member of any list.
+ */
+void listInitNode(listNode *node, void *value) {
+    node->prev = NULL;
+    node->next = NULL;
+    node->value = value;
 }

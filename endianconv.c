@@ -8,7 +8,7 @@
  * to be backward compatible are still in big endian) because most of the
  * production environments are little endian, and we have a lot of conversions
  * in a few places because ziplists, intsets, zipmaps, need to be endian-neutral
- * even in memory, since they are serialied on RDB files directly with a single
+ * even in memory, since they are serialized on RDB files directly with a single
  * write(2) without other additional steps.
  *
  * ----------------------------------------------------------------------------
@@ -105,21 +105,22 @@ uint64_t intrev64(uint64_t v) {
 #include <stdio.h>
 
 #define UNUSED(x) (void)(x)
-int endianconvTest(int argc, char *argv[]) {
+int endianconvTest(int argc, char *argv[], int flags) {
     char buf[32];
 
     UNUSED(argc);
     UNUSED(argv);
+    UNUSED(flags);
 
-    sprintf(buf,"ciaoroma");
+    snprintf(buf,sizeof(buf),"ciaoroma");
     memrev16(buf);
     printf("%s\n", buf);
 
-    sprintf(buf,"ciaoroma");
+    snprintf(buf,sizeof(buf),"ciaoroma");
     memrev32(buf);
     printf("%s\n", buf);
 
-    sprintf(buf,"ciaoroma");
+    snprintf(buf,sizeof(buf),"ciaoroma");
     memrev64(buf);
     printf("%s\n", buf);
 

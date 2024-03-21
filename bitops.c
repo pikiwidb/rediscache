@@ -1,9 +1,38 @@
+/* Bit operations.
+ *
+ * Copyright (c) 2009-2012, Salvatore Sanfilippo <antirez at gmail dot com>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   * Redistributions of source code must retain the above copyright notice,
+ *     this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *   * Neither the name of Redis nor the names of its contributors may be used
+ *     to endorse or promote products derived from this software without
+ *     specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 #include <limits.h>
-
 #include "redis.h"
 #include "commondef.h"
 #include "commonfunc.h"
@@ -13,11 +42,16 @@
 #include "db.h"
 #include "util.h"
 
+
+/* -----------------------------------------------------------------------------
+ * Helpers and low level bit functions.
+ * -------------------------------------------------------------------------- */
+
 /* Count number of bits set in the binary array pointed by 's' and long
  * 'count' bytes. The implementation of this function is required to
- * work with a input string length up to 512 MB. */
-size_t redisPopcount(void *s, long count) {
-    size_t bits = 0;
+ * work with an input string length up to 512 MB or more (server.proto_max_bulk_len) */
+long long redisPopcount(void *s, long count) {
+    long long bits = 0;
     unsigned char *p = s;
     uint32_t *p4;
     static const unsigned char bitsinbyte[256] = {0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4,1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,4,5,5,6,5,6,6,7,5,6,6,7,6,7,7,8};
@@ -77,16 +111,16 @@ size_t redisPopcount(void *s, long count) {
  * no zero bit is found, it returns count*8 assuming the string is zero
  * padded on the right. However if 'bit' is 1 it is possible that there is
  * not a single set bit in the bitmap. In this special case -1 is returned. */
-long redisBitpos(void *s, unsigned long count, int bit) {
+long long redisBitpos(void *s, unsigned long count, int bit) {
     unsigned long *l;
     unsigned char *c;
     unsigned long skipval, word = 0, one;
-    long pos = 0; /* Position of bit, to return to the caller. */
+    long long pos = 0; /* Position of bit, to return to the caller. */
     unsigned long j;
     int found;
 
     /* Process whole words first, seeking for first word that is not
-     * all ones or all zeros respectively if we are lookig for zeros
+     * all ones or all zeros respectively if we are looking for zeros
      * or ones. This is much faster with large strings having contiguous
      * blocks of 1 or 0 bits compared to the vanilla bit per bit processing.
      *
@@ -160,26 +194,33 @@ long redisBitpos(void *s, unsigned long count, int bit) {
 
     /* If we reached this point, there is a bug in the algorithm, since
      * the case of no match is handled as a special case before. */
-    // serverPanic("End of redisBitpos() reached.");
+    //serverPanic("End of redisBitpos() reached.");
     return 0; /* Just to avoid warnings. */
 }
 
-/* This is an helper function for commands implementations that need to write
+
+
+
+/* This is a helper function for commands implementations that need to write
  * bits to a string object. The command creates or pad with zeroes the string
  * so that the 'maxbit' bit can be addressed. The object is finally
  * returned. Otherwise if the key holds a wrong type NULL is returned and
  * an error is sent to the client. */
-robj *lookupStringForBitCommand(redisDb *redis_db, robj *kobj, size_t maxbit) {
+robj *lookupStringForBitCommand(redisDb *redis_db, robj *kobj, uint64_t maxbit, int *dirty) {
     size_t byte = maxbit >> 3;
-    robj *o = lookupKeyWrite(redis_db,kobj);
+    robj *o = lookupKeyWrite(redis_db, kobj);
+    if (checkType(o,OBJ_STRING)) return NULL;
+    if (dirty) *dirty = 0;
 
     if (o == NULL) {
         o = createObject(OBJ_STRING,sdsnewlen(NULL, byte+1));
         dbAdd(redis_db,kobj,o);
+        if (dirty) *dirty = 1;
     } else {
-        if (checkType(o,OBJ_STRING)) return NULL;
         o = dbUnshareStringValue(redis_db,kobj,o);
+        size_t oldlen = sdslen(o->ptr);
         o->ptr = sdsgrowzero(o->ptr,byte+1);
+        if (dirty && oldlen != sdslen(o->ptr)) *dirty = 1;
     }
     return o;
 }
@@ -188,7 +229,7 @@ robj *lookupStringForBitCommand(redisDb *redis_db, robj *kobj, size_t maxbit) {
  * in 'len'. The user is required to pass (likely stack allocated) buffer
  * 'llbuf' of at least LONG_STR_SIZE bytes. Such a buffer is used in the case
  * the object is integer encoded in order to provide the representation
- * without usign heap allocation.
+ * without using heap allocation.
  *
  * The function returns the pointer to the object array of bytes representing
  * the string it contains, that may be a pointer to 'llbuf' or to the
@@ -198,7 +239,7 @@ robj *lookupStringForBitCommand(redisDb *redis_db, robj *kobj, size_t maxbit) {
  * If the source object is NULL the function is guaranteed to return NULL
  * and set 'len' to 0. */
 unsigned char *getObjectReadOnlyString(robj *o, long *len, char *llbuf) {
-    assert(o->type == OBJ_STRING);
+    assert(!o || o->type == OBJ_STRING);
     unsigned char *p = NULL;
 
     /* Set the 'p' pointer to the string, that can be just a stack allocated
@@ -215,8 +256,8 @@ unsigned char *getObjectReadOnlyString(robj *o, long *len, char *llbuf) {
     return p;
 }
 
-int RcSetBit(redisCache db, robj *key, size_t bitoffset, long on)
-{
+/* SETBIT key offset bitvalue */
+int RcSetBit(redisCache db, robj *key, size_t bitoffset, long on) {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
     }
@@ -227,38 +268,41 @@ int RcSetBit(redisCache db, robj *key, size_t bitoffset, long on)
         return C_ERR;
     }
 
+    int dirty;
     robj *o;
-    if ((o = lookupStringForBitCommand(redis_db,key,bitoffset)) == NULL) {
-        return C_ERR;
-    }
+    if ((o = lookupStringForBitCommand(redis_db, key, bitoffset, &dirty)) == NULL) return C_ERR;
 
     ssize_t byte, bit;
-    int byteval;
+    int byteval, bitval;
 
     /* Get current values */
     byte = bitoffset >> 3;
     byteval = ((uint8_t*)o->ptr)[byte];
     bit = 7 - (bitoffset & 0x7);
+    bitval = byteval & (1 << bit);
 
-    /* Update byte with new bit value and return original value */
-    byteval &= ~(1 << bit);
-    byteval |= ((on & 0x1) << bit);
-    ((uint8_t*)o->ptr)[byte] = byteval;
-
+    /* Either it is newly created, changed length, or the bit changes before and after.
+     * Note that the bitval here is actually a decimal number.
+     * So we need to use `!!` to convert it to 0 or 1 for comparison. */
+    if (dirty || (!!bitval != on)) {
+        /* Update byte with new bit value. */
+        byteval &= ~(1 << bit);
+        byteval |= ((on & 0x1) << bit);
+        ((uint8_t*)o->ptr)[byte] = byteval;
+    }
     return C_OK;
 }
 
-int RcGetBit(redisCache db, robj *key, size_t bitoffset, long *val)
-{
+/* GETBIT key offset */
+int RcGetBit(redisCache db, robj *key, size_t bitoffset, long *val) {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
     }
-    redisDb *redis_db = (redisDb*)db;
+    redisDb *redis_db = (redisDb*) db;
 
     robj *o;
-    if ((o = lookupKeyRead(redis_db,key)) == NULL || checkType(o,OBJ_STRING)) {
-        return REDIS_KEY_NOT_EXIST;
-    }
+    if ((o = lookupKeyRead(redis_db, key)) == NULL ||
+        checkType(o,OBJ_STRING)) return REDIS_KEY_NOT_EXIST;
 
     char llbuf[32];
     size_t byte, bit;
@@ -279,33 +323,51 @@ int RcGetBit(redisCache db, robj *key, size_t bitoffset, long *val)
     return C_OK;
 }
 
-int RcBitCount(redisCache db, robj *key, long start, long end, long *val, int have_offset)
-{
-    if (NULL == db || NULL == key) {
+
+/* BITCOUNT key [start end [BIT|BYTE]] */
+// add isbit, if isbit is 1, get BIT, or get BYTE
+int RcBitCount(redisCache db, robj *key, long start, long end, int isbit, long *val, int have_offset) {
+    if (NULL == db || NULL == key || isbit > 1) {
         return REDIS_INVALID_ARG;
     }
-    redisDb *redis_db = (redisDb*)db;
+    redisDb *redis_db = (redisDb*) db;
+
+    unsigned char first_byte_neg_mask = 0, last_byte_neg_mask = 0;
 
     robj *o;
-    if ((o = lookupKeyRead(redis_db,key)) == NULL || checkType(o,OBJ_STRING)) {
-        return REDIS_KEY_NOT_EXIST;
-    }
+    /* Lookup, check for type, and return 0 for non existing keys. */
+    if ((o = lookupKeyRead(redis_db, key)) == NULL ||
+        checkType(o,OBJ_STRING)) return REDIS_KEY_NOT_EXIST;
 
-    /* Parse start/end range if any. */
+
     long strlen;
     char llbuf[LONG_STR_SIZE];
-    unsigned char *p = getObjectReadOnlyString(o,&strlen,llbuf);
+    unsigned char *p;
+    p = getObjectReadOnlyString(o,&strlen,llbuf);
+
+    /* Parse start/end range if any. */
     if (have_offset) {
+        long long totlen = strlen;
         /* Convert negative indexes */
         if (start < 0 && end < 0 && start > end) {
             return C_ERR;
         }
-        if (start < 0) start = strlen+start;
-        if (end < 0) end = strlen+end;
+
+        if (isbit) totlen <<= 3;
+        if (start < 0) start = totlen+start;
+        if (end < 0) end = totlen+end;
         if (start < 0) start = 0;
         if (end < 0) end = 0;
-        if (end >= strlen) end = strlen-1;
-    } else {
+        if (end >= totlen) end = totlen-1;
+        if (isbit && start <= end) {
+            /* Before converting bit offset to byte offset, create negative masks
+             * for the edges. */
+            first_byte_neg_mask = ~((1<<(8-(start&7)))-1) & 0xFF;
+            last_byte_neg_mask = (1<<(7-(end&7)))-1;
+            start >>= 3;
+            end >>= 3;
+        }
+    } else  {
         /* The whole string. */
         start = 0;
         end = strlen-1;
@@ -316,18 +378,41 @@ int RcBitCount(redisCache db, robj *key, long start, long end, long *val, int ha
     if (start > end) {
         *val = 0;
     } else {
-        long bytes = end-start+1;
-        *val = redisPopcount(p+start,bytes);
+        long bytes = (long)(end-start+1);
+        long long count = redisPopcount(p+start,bytes);
+        if (first_byte_neg_mask != 0 || last_byte_neg_mask != 0) {
+            unsigned char firstlast[2] = {0, 0};
+            /* We may count bits of first byte and last byte which are out of
+            * range. So we need to subtract them. Here we use a trick. We set
+            * bits in the range to zero. So these bit will not be excluded. */
+            if (first_byte_neg_mask != 0) firstlast[0] = p[start] & first_byte_neg_mask;
+            if (last_byte_neg_mask != 0) firstlast[1] = p[end] & last_byte_neg_mask;
+            count -= redisPopcount(firstlast,2);
+        }
+        *val = count;
     }
 
     return C_OK;
 }
 
-int RcBitPos(redisCache db, robj *key, long bit, long start, long end, long *val, int offset_status)
-{
+
+/**
+ *  BITPOS key bit [start [end [BIT|BYTE]]]
+ * @param db
+ * @param key
+ * @param bit 0 or 1 . 0 : find first 0 ; 1:find first 1
+ * @param start start index , bytes ,from 0
+ * @param end  end index, bytes
+ * @param isbit if isbit is 1, get BIT, or get BYTE
+ * @param val return value
+ * @param offset_status dentifies the number of parameters passed to the command
+ * @return the position of the first bit set to 1 or 0 in a string，Note that bit positions are returned always as absolute values starting from bit zero even when start and end are used to specify a range.
+ */
+int RcBitPos(redisCache db, robj *key, long bit, long start, long end, int isbit, long *val, int offset_status) {
     if (NULL == db || NULL == key) {
         return REDIS_INVALID_ARG;
     }
+
     redisDb *redis_db = (redisDb*)db;
 
     if (bit != 0 && bit != 1) {
@@ -335,29 +420,45 @@ int RcBitPos(redisCache db, robj *key, long bit, long start, long end, long *val
     }
 
     robj *o;
-    if ((o = lookupKeyRead(redis_db,key)) == NULL || checkType(o,OBJ_STRING)) {
+    /* If the key does not exist, from our point of view it is an infinite
+     * array of 0 bits. If the user is looking for the first clear bit return 0,
+     * If the user is looking for the first set bit, return -1. */
+    if ((o = lookupKeyRead(redis_db, key)) == NULL || checkType(o,OBJ_STRING)) {
         return REDIS_KEY_NOT_EXIST;
     }
 
     long strlen;
+    unsigned char *p;
     char llbuf[LONG_STR_SIZE];
     int end_given = 0;
-    unsigned char *p = getObjectReadOnlyString(o,&strlen,llbuf);
-    /* Parse start/end range if any. */
-    if (BIT_POS_START_OFFSET == offset_status
-        || BIT_POS_START_END_OFFSET == offset_status) {
+    unsigned char first_byte_neg_mask = 0, last_byte_neg_mask = 0;
+    p = getObjectReadOnlyString(o,&strlen,llbuf);
 
+    /* Parse start/end range if any. */
+    if (BIT_POS_START_OFFSET == offset_status || BIT_POS_START_END_OFFSET == offset_status) {
+        long long totlen = strlen;
+        assert(totlen <= LLONG_MAX >> 3);
         if (BIT_POS_START_END_OFFSET == offset_status) {
             end_given = 1;
         } else {
-            end = strlen-1;
+            if (isbit) end = (totlen<<3) + 7;
+            else end = totlen-1;
         }
+        if (isbit) totlen <<= 3;
         /* Convert negative indexes */
-        if (start < 0) start = strlen+start;
-        if (end < 0) end = strlen+end;
+        if (start < 0) start = totlen+start;
+        if (end < 0) end = totlen+end;
         if (start < 0) start = 0;
         if (end < 0) end = 0;
-        if (end >= strlen) end = strlen-1;
+        if (end >= totlen) end = totlen-1;
+        if (isbit && start <= end) {
+            /* Before converting bit offset to byte offset, create negative masks
+             * for the edges. */
+            first_byte_neg_mask = ~((1<<(8-(start&7)))-1) & 0xFF;
+            last_byte_neg_mask = (1<<(7-(end&7)))-1;
+            start >>= 3;
+            end >>= 3;
+        }
     } else if (BIT_POS_NO_OFFSET == offset_status) {
         /* The whole string. */
         start = 0;
@@ -373,8 +474,36 @@ int RcBitPos(redisCache db, robj *key, long bit, long start, long end, long *val
         *val = -1;
     } else {
         long bytes = end-start+1;
-        long pos = redisBitpos(p+start,bytes,bit);
+        long long pos;
+        unsigned char tmpchar;
+        if (first_byte_neg_mask) {
+            if (bit) tmpchar = p[start] & ~first_byte_neg_mask;
+            else tmpchar = p[start] | first_byte_neg_mask;
+            /* Special case, there is only one byte */
+            if (last_byte_neg_mask && bytes == 1) {
+                if (bit) tmpchar = tmpchar & ~last_byte_neg_mask;
+                else tmpchar = tmpchar | last_byte_neg_mask;
+            }
+            pos = redisBitpos(&tmpchar,1,bit);
+            /* If there are no more bytes or we get valid pos, we can exit early */
+            if (bytes == 1 || (pos != -1 && pos != 8)) goto result;
+            start++;
+            bytes--;
+        }
+        /* If the last byte has not bits in the range, we should exclude it */
+        long curbytes = bytes - (last_byte_neg_mask ? 1 : 0);
+        if (curbytes > 0) {
+            pos = redisBitpos(p+start,curbytes,bit);
+            /* If there is no more bytes or we get valid pos, we can exit early */
+            if (bytes == curbytes || (pos != -1 && pos != (long long)curbytes<<3)) goto result;
+            start += curbytes;
+            bytes -= curbytes;
+        }
+        if (bit) tmpchar = p[end] & ~last_byte_neg_mask;
+        else tmpchar = p[end] | last_byte_neg_mask;
+        pos = redisBitpos(&tmpchar,1,bit);
 
+    result:
         /* If we are looking for clear bits, and the user specified an exact
          * range with start-end, we can't consider the right of the range as
          * zero padded (as we do when no explicit end is given).
@@ -382,11 +511,11 @@ int RcBitPos(redisCache db, robj *key, long bit, long start, long end, long *val
          * So if redisBitpos() returns the first bit outside the range,
          * we return -1 to the caller, to mean, in the specified range there
          * is not a single "0" bit. */
-        if (end_given && bit == 0 && pos == bytes*8) {
+        if (end_given && bit == 0 && pos == (long long)bytes<<3) {
             *val = -1;
             return C_ERR;
         }
-        if (pos != -1) pos += start*8; /* Adjust for the bytes we skipped. */
+        if (pos != -1) pos += (long long)start<<3; /* Adjust for the bytes we skipped. */
         *val = pos;
     }
 

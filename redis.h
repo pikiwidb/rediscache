@@ -142,8 +142,8 @@ int RcZRemrangebylex(redisCache cache, robj *key, robj *min, robj *max);
  *----------------------------------------------------------------------------*/
 int RcSetBit(redisCache cache, robj *key, size_t bitoffset, long on);
 int RcGetBit(redisCache cache, robj *key, size_t bitoffset, long *val);
-int RcBitCount(redisCache cache, robj *key, long start, long end, long *val, int have_offset);
-int RcBitPos(redisCache cache, robj *key, long bit, long start, long end, long *val, int offset_status);
+int RcBitCount(redisCache cache, robj *key, long start, long end, int isbit, long *val, int have_offset);
+int RcBitPos(redisCache cache, robj *key, long bit, long start, long end, int isbit, long *val, int offset_status);
 
 #ifdef _cplusplus
 }

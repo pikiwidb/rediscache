@@ -34,6 +34,7 @@
 #define __SDS_H
 
 #define SDS_MAX_PREALLOC (1024*1024)
+extern const char *SDS_NOINIT;
 
 #include <sys/types.h>
 #include <stdarg.h>
@@ -84,6 +85,7 @@ struct __attribute__ ((__packed__)) sdshdr64 {
 #define SDS_HDR_VAR16(s) struct sdshdr16 *sh = (struct sdshdr16*)((s)-(sizeof(struct sdshdr16)));
 #define SDS_HDR_VAR32(s) struct sdshdr32 *sh = (struct sdshdr32*)((s)-(sizeof(struct sdshdr32)));
 #define SDS_HDR_VAR64(s) struct sdshdr64 *sh = (struct sdshdr64*)((s)-(sizeof(struct sdshdr64)));
+
 #define SDS_HDR(T,s) ((struct sdshdr##T *)((s)-(sizeof(struct sdshdr##T))))
 #define SDS_TYPE_5_LEN(f) ((f)>>SDS_TYPE_BITS)
 
@@ -219,6 +221,7 @@ static inline void sdssetalloc(sds s, size_t newlen) {
 }
 
 sds sdsnewlen(const void *init, size_t initlen);
+sds sdstrynewlen(const void *init, size_t initlen);
 sds sdsnew(const char *init);
 sds sdsempty(void);
 sds sdsdup(const sds s);
@@ -240,6 +243,7 @@ sds sdscatprintf(sds s, const char *fmt, ...);
 
 sds sdscatfmt(sds s, char const *fmt, ...);
 sds sdstrim(sds s, const char *cset);
+void sdssubstr(sds s, size_t start, size_t len);
 void sdsrange(sds s, ssize_t start, ssize_t end);
 void sdsupdatelen(sds s);
 void sdsclear(sds s);
@@ -254,11 +258,22 @@ sds *sdssplitargs(const char *line, int *argc);
 sds sdsmapchars(sds s, const char *from, const char *to, size_t setlen);
 sds sdsjoin(char **argv, int argc, char *sep);
 sds sdsjoinsds(sds *argv, int argc, const char *sep, size_t seplen);
+int sdsneedsrepr(const sds s);
+
+/* Callback for sdstemplate. The function gets called by sdstemplate
+ * every time a variable needs to be expanded. The variable name is
+ * provided as variable, and the callback is expected to return a
+ * substitution value. Returning a NULL indicates an error.
+ */
+typedef sds (*sdstemplate_callback_t)(const sds variable, void *arg);
+sds sdstemplate(const char *template, sdstemplate_callback_t cb_func, void *cb_arg);
 
 /* Low level functions exposed to the user API */
 sds sdsMakeRoomFor(sds s, size_t addlen);
+sds sdsMakeRoomForNonGreedy(sds s, size_t addlen);
 void sdsIncrLen(sds s, ssize_t incr);
-sds sdsRemoveFreeSpace(sds s);
+sds sdsRemoveFreeSpace(sds s, int would_regrow);
+sds sdsResize(sds s, size_t size, int would_regrow);
 size_t sdsAllocSize(sds s);
 void *sdsAllocPtr(sds s);
 
@@ -271,7 +286,7 @@ void *sds_realloc(void *ptr, size_t size);
 void sds_free(void *ptr);
 
 #ifdef REDIS_TEST
-int sdsTest(int argc, char *argv[]);
+int sdsTest(int argc, char *argv[], int flags);
 #endif
 
 #endif
