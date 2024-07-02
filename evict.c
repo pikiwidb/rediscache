@@ -32,12 +32,27 @@
 
 #include <string.h>
 #include <limits.h>
-
 #include "evict.h"
 #include "atomicvar.h"
 #include "commonfunc.h"
 #include "zmalloc.h"
+#include <math.h>
 
+/* ----------------------------------------------------------------------------
+ * Data structures
+ * --------------------------------------------------------------------------*/
+
+/* To improve the quality of the LRU approximation we take a set of keys
+ * that are good candidate for eviction across performEvictions() calls.
+ *
+ * Entries inside the eviction pool are taken ordered by idle time, putting
+ * greater idle times to the right (ascending order).
+ *
+ * When an LFU policy is used instead, a reverse frequency indication is used
+ * instead of the idle time, so that we still evict by larger value (larger
+ * inverse frequency means to evict keys with the least frequent accesses).
+ *
+ * Empty entries have the key pointer set to NULL. */
 extern db_config g_db_config;
 
 /* ----------------------------------------------------------------------------
@@ -48,7 +63,7 @@ extern db_config g_db_config;
  * in a reduced-bits format that can be used to set and check the
  * object->lru field of redisObject structures. */
 unsigned int getLRUClock(void) {
-    return (mstime()/LRU_CLOCK_RESOLUTION) & LRU_CLOCK_MAX;
+    return (mstime() / LRU_CLOCK_RESOLUTION) & LRU_CLOCK_MAX;
 }
 
 /* This function is used to obtain the current LRU clock.
@@ -67,29 +82,11 @@ unsigned long long estimateObjectIdleTime(robj *o) {
         return (lruclock - o->lru) * LRU_CLOCK_RESOLUTION;
     } else {
         return (lruclock + (LRU_CLOCK_MAX - o->lru)) *
-                    LRU_CLOCK_RESOLUTION;
+               LRU_CLOCK_RESOLUTION;
     }
 }
 
-/* freeMemoryIfNeeded() gets called when 'maxmemory' is set on the config
- * file to limit the max memory used by the server, before processing a
- * command.
- *
- * The goal of the function is to free enough memory to keep Redis under the
- * configured memory limit.
- *
- * The function starts calculating how many bytes should be freed to keep
- * Redis under the limit, and enters a loop selecting the best keys to
- * evict accordingly to the configured policy.
- *
- * If all the bytes needed to return back under the limit were freed the
- * function returns C_OK, otherwise C_ERR is returned, and the caller
- * should block the execution of commands that will result in more memory
- * used by the server.
- *
- * ------------------------------------------------------------------------
- *
- * LRU approximation algorithm
+/* LRU approximation algorithm
  *
  * Redis uses an approximation of the LRU algorithm that runs in constant
  * memory. Every time there is a key to expire, we sample N keys (with
@@ -110,22 +107,22 @@ unsigned long long estimateObjectIdleTime(robj *o) {
  * evicted in the whole database. */
 
 /* Create a new eviction pool. */
-struct evictionPoolEntry* evictionPoolAlloc(void) {
+struct evictionPoolEntry *evictionPoolAlloc(void) {
     struct evictionPoolEntry *ep;
     int j;
 
-    ep = zmalloc(sizeof(*ep)*EVPOOL_SIZE);
+    ep = zmalloc(sizeof(*ep) * EVPOOL_SIZE);
     for (j = 0; j < EVPOOL_SIZE; j++) {
         ep[j].idle = 0;
         ep[j].key = NULL;
-        ep[j].cached = sdsnewlen(NULL,EVPOOL_CACHED_SDS_SIZE);
+        ep[j].cached = sdsnewlen(NULL, EVPOOL_CACHED_SDS_SIZE);
     }
     return ep;
 }
 
 /* Destroy a eviction pool. */
 void evictionPoolDestroy(struct evictionPoolEntry *pool) {
-    
+
     if (pool) {
         int j;
         for (j = 0; j < EVPOOL_SIZE; j++) {
@@ -134,9 +131,10 @@ void evictionPoolDestroy(struct evictionPoolEntry *pool) {
     }
 }
 
-/* This is an helper function for freeMemoryIfNeeded(), it is used in order
+
+/* This is a helper function for performEvictions(), it is used in order
  * to populate the evictionPool with a few entries every time we want to
- * expire a key. Keys with idle time smaller than one of the current
+ * expire a key. Keys with idle time bigger than one of the current
  * keys are added. Keys are always added if there are free entries.
  *
  * We insert keys on place in ascending order, so keys with the smaller
@@ -149,9 +147,9 @@ void evictionPoolPopulate(dict *sampledict, dict *keydict, struct evictionPoolEn
 
     atomicGet(g_db_config.maxmemory_samples, maxmemory_samples);
     atomicGet(g_db_config.maxmemory_policy, maxmemory_policy);
-
     dictEntry *samples[maxmemory_samples];
-    count = dictGetSomeKeys(sampledict,samples,maxmemory_samples);
+
+    count = dictGetSomeKeys(sampledict, samples, maxmemory_samples);
     for (j = 0; j < count; j++) {
         unsigned long long idle;
         sds key;
@@ -182,12 +180,12 @@ void evictionPoolPopulate(dict *sampledict, dict *keydict, struct evictionPoolEn
              * first. So inside the pool we put objects using the inverted
              * frequency subtracting the actual frequency to the maximum
              * frequency of 255. */
-            idle = 255-LFUDecrAndReturn(o);
+            idle = 255 - LFUDecrAndReturn(o);
         } else if (maxmemory_policy == MAXMEMORY_VOLATILE_TTL) {
             /* In this case the sooner the expire the better. */
-            idle = ULLONG_MAX - (long)dictGetVal(de);
+            idle = ULLONG_MAX - (long) dictGetVal(de);
         } else {
-            // serverPanic("Unknown eviction policy in evictionPoolPopulate()");
+//            serverPanic("Unknown eviction policy in evictionPoolPopulate()");
         }
 
         /* Insert the element inside the pool.
@@ -196,8 +194,9 @@ void evictionPoolPopulate(dict *sampledict, dict *keydict, struct evictionPoolEn
         k = 0;
         while (k < EVPOOL_SIZE &&
                pool[k].key &&
-               pool[k].idle < idle) k++;
-        if (k == 0 && pool[EVPOOL_SIZE-1].key != NULL) {
+               pool[k].idle < idle)
+            k++;
+        if (k == 0 && pool[EVPOOL_SIZE - 1].key != NULL) {
             /* Can't insert if the element is < the worst element we have
              * and there are no empty buckets. */
             continue;
@@ -206,14 +205,14 @@ void evictionPoolPopulate(dict *sampledict, dict *keydict, struct evictionPoolEn
         } else {
             /* Inserting in the middle. Now k points to the first element
              * greater than the element to insert.  */
-            if (pool[EVPOOL_SIZE-1].key == NULL) {
+            if (pool[EVPOOL_SIZE - 1].key == NULL) {
                 /* Free space on the right? Insert at k shifting
                  * all the elements from k to end to the right. */
 
                 /* Save SDS before overwriting. */
-                sds cached = pool[EVPOOL_SIZE-1].cached;
-                memmove(pool+k+1,pool+k,
-                    sizeof(pool[0])*(EVPOOL_SIZE-k-1));
+                sds cached = pool[EVPOOL_SIZE - 1].cached;
+                memmove(pool + k + 1, pool + k,
+                        sizeof(pool[0]) * (EVPOOL_SIZE - k - 1));
                 pool[k].cached = cached;
             } else {
                 /* No free space on right? Insert at k-1 */
@@ -222,7 +221,7 @@ void evictionPoolPopulate(dict *sampledict, dict *keydict, struct evictionPoolEn
                  * left, so we discard the element with smaller idle time. */
                 sds cached = pool[0].cached; /* Save SDS before overwriting. */
                 if (pool[0].key != pool[0].cached) sdsfree(pool[0].key);
-                memmove(pool,pool+1,sizeof(pool[0])*k);
+                memmove(pool, pool + 1, sizeof(pool[0]) * k);
                 pool[k].cached = cached;
             }
         }
@@ -230,13 +229,13 @@ void evictionPoolPopulate(dict *sampledict, dict *keydict, struct evictionPoolEn
         /* Try to reuse the cached SDS string allocated in the pool entry,
          * because allocating and deallocating this object is costly
          * (according to the profiler, not my fantasy. Remember:
-         * premature optimizbla bla bla bla. */
+         * premature optimization bla bla bla. */
         int klen = sdslen(key);
         if (klen > EVPOOL_CACHED_SDS_SIZE) {
             pool[k].key = sdsdup(key);
         } else {
-            memcpy(pool[k].cached,key,klen+1);
-            sdssetlen(pool[k].cached,klen);
+            memcpy(pool[k].cached, key, klen + 1);
+            sdssetlen(pool[k].cached, klen);
             pool[k].key = pool[k].cached;
         }
         pool[k].idle = idle;
@@ -269,14 +268,14 @@ void evictionPoolPopulate(dict *sampledict, dict *keydict, struct evictionPoolEn
  * has a low value.
  *
  * New keys don't start at zero, in order to have the ability to collect
- * some accesses before being trashed away, so they start at COUNTER_INIT_VAL.
- * The logarithmic increment performed on LOG_C takes care of COUNTER_INIT_VAL
- * when incrementing the key, so that keys starting at COUNTER_INIT_VAL
+ * some accesses before being trashed away, so they start at LFU_INIT_VAL.
+ * The logarithmic increment performed on LOG_C takes care of LFU_INIT_VAL
+ * when incrementing the key, so that keys starting at LFU_INIT_VAL
  * (or having a smaller value) have a very high chance of being incremented
  * on access.
  *
  * During decrement, the value of the logarithmic counter is halved if
- * its current value is greater than two times the COUNTER_INIT_VAL, otherwise
+ * its current value is greater than two times the LFU_INIT_VAL, otherwise
  * it is just decremented by one.
  * --------------------------------------------------------------------------*/
 
@@ -284,7 +283,7 @@ void evictionPoolPopulate(dict *sampledict, dict *keydict, struct evictionPoolEn
  * 16 bits. The returned time is suitable to be stored as LDT (last decrement
  * time) for the LFU implementation. */
 unsigned long LFUGetTimeInMinutes(void) {
-    return (time(NULL)/60) & 65535;
+    return (time(NULL) / 60) & 65535;
 }
 
 /* Given an object last access time, compute the minimum number of minutes
@@ -293,18 +292,18 @@ unsigned long LFUGetTimeInMinutes(void) {
  * exactly once. */
 unsigned long LFUTimeElapsed(unsigned long ldt) {
     unsigned long now = LFUGetTimeInMinutes();
-    if (now >= ldt) return now-ldt;
-    return 65535-ldt+now;
+    if (now >= ldt) return now - ldt;
+    return 65535 - ldt + now;
 }
 
 /* Logarithmically increment a counter. The greater is the current counter value
- * the less likely is that it gets really implemented. Saturate it at 255. */
+ * the less likely is that it gets really incremented. Saturate it at 255. */
 uint8_t LFULogIncr(uint8_t counter) {
     if (counter == 255) return 255;
-    double r = (double)rand()/RAND_MAX;
+    double r = (double) rand() / RAND_MAX;
     double baseval = counter - LFU_INIT_VAL;
     if (baseval < 0) baseval = 0;
-    double p = 1.0/(baseval*CONFIG_DEFAULT_LFU_LOG_FACTOR+1);
+    double p = 1.0 / (baseval * CONFIG_DEFAULT_LFU_LOG_FACTOR + 1);
     if (r < p) counter++;
     return counter;
 }
