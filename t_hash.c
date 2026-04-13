@@ -10,6 +10,7 @@
 #include "db.h"
 #include "ziplist.h"
 #include "util.h"
+#include "stdio.h"
 
 extern dictType hashDictType;
 
@@ -597,9 +598,11 @@ static int genericHgetall(redisDb *redis_db, robj *kobj, hitem **items, unsigned
     while (hashTypeNext(hi) != C_ERR) {
         if (flags & OBJ_HASH_KEY) {
             addHashIteratorCursorToReply(hi, OBJ_HASH_KEY, &((*items+i)->field));
+            printf("field: %s\n", (*items+i)->field);
         }
         if (flags & OBJ_HASH_VALUE) {
             addHashIteratorCursorToReply(hi, OBJ_HASH_VALUE, &((*items+i)->value));
+            printf("value: %s\n", (*items+i)->value);
         }
 
         ++i;
