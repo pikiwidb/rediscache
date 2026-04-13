@@ -2,6 +2,13 @@
 #include <string.h>
 
 #include "redis.h"
+#include <pthread.h>
+
+#define MAX_CACHE_DB_NUM 1024
+void* g_all_redis_dbs[MAX_CACHE_DB_NUM] = {NULL};
+int g_redis_db_num = 0;
+pthread_mutex_t g_db_list_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 #include "commondef.h"
 #include "commonfunc.h"
 #include "atomicvar.h"
@@ -61,7 +68,15 @@ void RcSetConfig(db_config* cfg)
 
 redisCache RcCreateCacheHandle(void)
 {
-    return createRedisDb();
+    redisDb *db = createRedisDb();
+    if (db) {
+        pthread_mutex_lock(&g_db_list_mutex);
+        if (g_redis_db_num < MAX_CACHE_DB_NUM) {
+            g_all_redis_dbs[g_redis_db_num++] = db;
+        }
+        pthread_mutex_unlock(&g_db_list_mutex);
+    }
+    return db;
 }
 
 void RcDestroyCacheHandle(redisCache cache)

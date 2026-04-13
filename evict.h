@@ -25,6 +25,7 @@ struct evictionPoolEntry {
     unsigned long long idle;    /* Object idle time (inverse frequency for LFU) */
     sds key;                    /* Key name. */
     sds cached;                 /* Cached SDS object for key name. */
+    void *db;                   /* Source database */
 };
 
 unsigned int getLRUClock(void);
@@ -33,7 +34,7 @@ unsigned long long estimateObjectIdleTime(robj *o);
 
 struct evictionPoolEntry* evictionPoolAlloc(void);
 void evictionPoolDestroy(struct evictionPoolEntry *pool);
-void evictionPoolPopulate(dict *sampledict, dict *keydict, struct evictionPoolEntry *pool);
+void evictionPoolPopulate(dict *sampledict, dict *keydict, struct evictionPoolEntry *pool, void *db);
 
 #define LFU_INIT_VAL 5
 unsigned long LFUGetTimeInMinutes(void);

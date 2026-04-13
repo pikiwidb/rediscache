@@ -33,6 +33,11 @@
 #include <string.h>
 
 #include "db.h"
+#include <pthread.h>
+extern void* g_all_redis_dbs[];
+extern int g_redis_db_num;
+extern pthread_mutex_t g_db_list_mutex;
+
 #include "object.h"
 #include "atomicvar.h"
 #include "commondef.h"
@@ -386,19 +391,16 @@ long long getExpire(redisDb *db, robj *key) {
  * The external API for eviction: freeMemroyIfNeeded() is called by the
  * server when there is data to add in order to make space if needed.
  * --------------------------------------------------------------------------*/
-int freeMemoryIfNeeded(redisDb *db) {
+int freeMemoryIfNeeded(redisDb *trigger_db) {
     size_t mem_used, mem_tofree, mem_freed;
     long long delta;
     unsigned long long maxmemory;
     int maxmemory_policy;
 
-    /* Check if we are over the memory usage limit. If we are not, no need
-     * to subtract the slaves output buffers. We can just return ASAP. */
     atomicGet(g_db_config.maxmemory, maxmemory);
     mem_used = zmalloc_used_memory();
     if (mem_used <= maxmemory) return C_OK;
 
-    /* Compute how much memory we need to free. */
     mem_tofree = mem_used - maxmemory;
     mem_freed = 0;
 
@@ -406,77 +408,70 @@ int freeMemoryIfNeeded(redisDb *db) {
     if (maxmemory_policy == MAXMEMORY_NO_EVICTION) return C_ERR;
 
     while (mem_freed < mem_tofree) {
-        int k, keys_freed = 0;
+        int keys_freed = 0;
         sds bestkey = NULL;
-        dict *dict;
+        redisDb *bestdb = NULL;
         dictEntry *de;
 
         if (maxmemory_policy & (MAXMEMORY_FLAG_LRU|MAXMEMORY_FLAG_LFU) ||
             maxmemory_policy == MAXMEMORY_VOLATILE_TTL)
         {
-            struct evictionPoolEntry *pool = db->eviction_pool;
+            struct evictionPoolEntry *pool = trigger_db->eviction_pool;
 
             while(bestkey == NULL) {
-                unsigned long keys = 0;
-
-                /* We don't want to make local-db choices when expiring keys,
-                 * so to start populate the eviction pool sampling keys from
-                 * every DB. */
-                dict = (maxmemory_policy & MAXMEMORY_FLAG_ALLKEYS) ?
-                        db->dict : db->expires;
-                if ((keys = dictSize(dict)) != 0) {
-                    evictionPoolPopulate(dict, db->dict, pool);
+                pthread_mutex_lock(&g_db_list_mutex);
+                for (int i = 0; i < g_redis_db_num; i++) {
+                    redisDb *curr_db = (redisDb *)g_all_redis_dbs[i];
+                    dict *d = (maxmemory_policy & MAXMEMORY_FLAG_ALLKEYS) ? curr_db->dict : curr_db->expires;
+                    if (dictSize(d) != 0) {
+                        evictionPoolPopulate(d, curr_db->dict, pool, curr_db);
+                    }
                 }
-                if (!keys) break; /* No keys to evict. */
+                pthread_mutex_unlock(&g_db_list_mutex);
 
-                /* Go backward from best to worst element to evict. */
-                for (k = EVPOOL_SIZE-1; k >= 0; k--) {
+                for (int k = EVPOOL_SIZE-1; k >= 0; k--) {
                     if (pool[k].key == NULL) continue;
 
-                    if (maxmemory_policy & MAXMEMORY_FLAG_ALLKEYS) {
-                        de = dictFind(db->dict, pool[k].key);
-                    } else {
-                        de = dictFind(db->expires, pool[k].key);
+                    bestdb = (redisDb *)pool[k].db;
+                    if (bestdb) {
+                        dict *d = (maxmemory_policy & MAXMEMORY_FLAG_ALLKEYS) ? bestdb->dict : bestdb->expires;
+                        de = dictFind(d, pool[k].key);
+                        if (de) {
+                            bestkey = dictGetKey(de);
+                        }
                     }
 
-                    /* Remove the entry from the pool. */
-                    if (pool[k].key != pool[k].cached)
-                        sdsfree(pool[k].key);
+                    if (pool[k].key != pool[k].cached) sdsfree(pool[k].key);
                     pool[k].key = NULL;
                     pool[k].idle = 0;
+                    pool[k].db = NULL;
 
-                    /* If the key exists, is our pick. Otherwise it is
-                     * a ghost and we need to try the next element. */
-                    if (de) {
-                        bestkey = dictGetKey(de);
-                        break;
-                    } else {
-                        /* Ghost... Iterate again. */
-                    }
+                    if (bestkey) break;
                 }
+                if (!bestkey) break;
             }
         }
-
-        /* volatile-random and allkeys-random policy */
         else if (maxmemory_policy == MAXMEMORY_ALLKEYS_RANDOM ||
                  maxmemory_policy == MAXMEMORY_VOLATILE_RANDOM)
         {
-            /* When evicting a random key, we try to evict a key for
-             * each DB, so we use the static 'next_db' variable to
-             * incrementally visit all DBs. */
-            dict = (maxmemory_policy == MAXMEMORY_ALLKEYS_RANDOM) ?
-                    db->dict : db->expires;
-            if (dictSize(dict) != 0) {
-                de = dictGetRandomKey(dict);
-                bestkey = dictGetKey(de);
+            pthread_mutex_lock(&g_db_list_mutex);
+            for (int i = 0; i < g_redis_db_num; i++) {
+                redisDb *curr_db = (redisDb *)g_all_redis_dbs[i];
+                dict *d = (maxmemory_policy == MAXMEMORY_ALLKEYS_RANDOM) ? curr_db->dict : curr_db->expires;
+                if (dictSize(d) != 0) {
+                    de = dictGetRandomKey(d);
+                    bestkey = dictGetKey(de);
+                    bestdb = curr_db;
+                    break;
+                }
             }
+            pthread_mutex_unlock(&g_db_list_mutex);
         }
 
-        /* Finally remove the selected key. */
-        if (bestkey) {
-            robj *keyobj = createStringObject(bestkey,sdslen(bestkey));
+        if (bestkey && bestdb) {
+            robj *keyobj = createStringObject(bestkey, sdslen(bestkey));
             delta = (long long) zmalloc_used_memory();
-            dbDelete(db,keyobj);
+            dbDelete(bestdb, keyobj);
             delta -= (long long) zmalloc_used_memory();
             mem_freed += delta;
 

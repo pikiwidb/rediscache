@@ -143,7 +143,7 @@ void evictionPoolDestroy(struct evictionPoolEntry *pool) {
  * idle time are on the left, and keys with the higher idle time on the
  * right. */
 
-void evictionPoolPopulate(dict *sampledict, dict *keydict, struct evictionPoolEntry *pool) {
+void evictionPoolPopulate(dict *sampledict, dict *keydict, struct evictionPoolEntry *pool, void *db) {
     int j, k, count;
     int maxmemory_samples, maxmemory_policy;
 
@@ -240,6 +240,7 @@ void evictionPoolPopulate(dict *sampledict, dict *keydict, struct evictionPoolEn
             pool[k].key = pool[k].cached;
         }
         pool[k].idle = idle;
+        pool[k].db = db;
     }
 }
 
